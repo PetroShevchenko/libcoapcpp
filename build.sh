@@ -10,6 +10,19 @@ BUILD_TYPE=NATIVE
 #DOCKER_FILE=dockerfile.debian
 DOCKER_FILE=dockerfile.fedora
 
+if [ -z "$GTEST_DIR" ] ; then
+   export GTEST_DIR=$(pwd)/third-party/googletest/googletest
+fi
+if [ -z "$GMOCK_DIR" ] ; then
+   export GMOCK_DIR=$(pwd)/third-party/googletest/googlemock
+fi
+
+if [ -z "$GTEST_DIR" ] ; then
+   echo "GTEST_DIR is not defined (Google Test location)! Abort..."
+   exit -1
+fi
+
+mkdir -p third-party
 mkdir -p build
 
 if [ "$TARGET" = "POSIX" ];then
