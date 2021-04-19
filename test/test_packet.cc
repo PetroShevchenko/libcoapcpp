@@ -1,11 +1,33 @@
 #include "packet.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 #include <cstdint>
+#include <cstring>
 
 using namespace std;
 using namespace coap;
+using namespace spdlog;
 
-const uint8_t testCoapPacket[] = {// in network order
+#define PRINT_TESTED_VALUES
+
+/*
+    RFC7252 : CoAp frame format
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Ver| T |  TKL  |      Code     |          Message ID           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   Token (if any, TKL bytes) ...
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   Options (if any) ...
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |1 1 1 1 1 1 1 1|    Payload (if any) ...
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+
+static const uint8_t testCoapPacket[] = {// in network order
     0x44, 0x02, 0x13, 0xe9, 0xe9, 0x13, 0xa3, 0x3f, 0xb2, 0x72, 0x64, 0x11, 0x28, 0x39, 0x6c, 0x77,
     0x6d, 0x32, 0x6d, 0x3d, 0x31, 0x2e, 0x31, 0x0d, 0x01, 0x65, 0x70, 0x3d, 0x74, 0x65, 0x73, 0x74,
     0x5f, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x03, 0x62, 0x3d, 0x55, 0x06, 0x6c, 0x74, 0x3d, 0x33,
@@ -19,6 +41,44 @@ const uint8_t testCoapPacket[] = {// in network order
     0x3e
 };
 
+static const OptionNumber testOptionSet[] = {
+    IF_MATCH,
+    URI_HOST,
+    ETAG,
+    IF_NONE_MATCH,
+    URI_PORT,
+    LOCATION_PATH,
+    URI_PATH,
+    CONTENT_FORMAT,
+    MAX_AGE,
+    URI_QUERY,
+    ACCEPT,
+    LOCATION_QUERY,
+    BLOCK_2,
+    BLOCK_1,
+    SIZE_2,
+    PROXY_URI,
+    PROXY_SCHEME,
+    SIZE_1
+};
+
+static uint8_t testOptionValue[32] = {0};
+
+#ifdef PRINT_TESTED_VALUES
+static void print_options(const Packet & packet)
+{
+    for (auto opt : const_cast<Packet &>(packet).options())
+    {
+        info("number : {0:d}", opt.number());
+        info("delta : {0:d}", opt.delta());
+        info("length : {0:d}", opt.length());
+        info("value : ");
+        fmt::print("{:02x}", fmt::join(opt.value(), ", "));
+        fmt::print("\n");
+    }
+}
+#endif
+
 TEST(testPacket, parse)
 {
     error_code ec;
@@ -26,11 +86,165 @@ TEST(testPacket, parse)
 
     packet.parse(testCoapPacket, sizeof(testCoapPacket), ec);
     ASSERT_TRUE(!ec.value());
+
+#ifdef PRINT_TESTED_VALUES
+    info("version : {0:d}", packet.version());
+    info("token length : {0:d}", packet.token_length());
+    info("type : {0:d}", packet.type());
+    info("code : {0:d}", packet.code_as_byte());
+    info("code detail : {0:d}", packet.code_detail());
+    info("code class : {0:d}", packet.code_class());
+    info("message id : {0:d}", packet.identity());
+    info("options :");
+    print_options(packet);
+#endif
+
+
+    EXPECT_EQ(packet.version(), COAP_VERSION);
+    EXPECT_EQ(packet.type(), CONFIRMABLE);
+    EXPECT_EQ(packet.token_length(), 4UL);
+    EXPECT_EQ(packet.code_as_byte(), POST);
+    EXPECT_EQ(packet.code_class(), 0);
+    EXPECT_EQ(packet.code_detail(), 2);
+    EXPECT_EQ(packet.identity(), 5097);
+
+    int r = memcmp(&testCoapPacket[PACKET_HEADER_SIZE], packet.token(), packet.token_length());
+
+    EXPECT_TRUE(r == 0);
+}
+/*
+    RFC7252 : Option format
+
+     0   1   2   3   4   5   6   7
+   +---------------+---------------+
+   |               |               |
+   |  Option Delta | Option Length |   1 byte
+   |               |               |
+   +---------------+---------------+
+   \                               \
+   /         Option Delta          /   0-2 bytes
+   \          (extended)           \
+   +-------------------------------+
+   \                               \
+   /         Option Length         /   0-2 bytes
+   \          (extended)           \
+   +-------------------------------+
+   \                               \
+   /                               /
+   \                               \
+   /         Option Value          /   0 or more bytes
+   \                               \
+   /                               /
+   \                               \
+   +-------------------------------+
+*/
+TEST(testPacket, findOption)
+{
+    error_code ec;
+    Packet packet;
+
+    packet.parse(testCoapPacket, sizeof(testCoapPacket), ec);
+    ASSERT_TRUE(!ec.value());
+
+    vector<Option *> optList;
+    size_t quantity;
+
+    for(auto o : testOptionSet)
+    {
+        quantity = packet.find_option(o, optList);
+
+#ifdef PRINT_TESTED_VALUES
+        info("Searched option is {0:d}", o);
+        if (!quantity)
+            info("option is not presented");
+        else
+        {
+            size_t index = 0;
+            info("option number: {0:d}", optList[index]->number());
+            info("option quantity : {0:d}", quantity);
+            do
+            {
+                info("option sequens number : {0:d}", index);
+                info("option value length : {0:d}",(optList[index])->length());
+                info("option value delta : {0:d}",(optList[index])->delta());
+                info("option value: ");
+                fmt::print("{:02x}", fmt::join((optList[index])->value(), ", "));
+                fmt::print("\n");
+            } while (++index < quantity);
+        }
+        info("============================");
+#endif
+
+        switch(o)
+        {
+            case URI_PATH:
+            {
+                EXPECT_EQ(quantity, 1UL);
+                EXPECT_EQ(quantity, optList.size());
+                EXPECT_EQ(optList[0]->number(), o);
+                break;
+            }
+            case CONTENT_FORMAT:
+            {
+                EXPECT_EQ(quantity, 1UL);
+                EXPECT_EQ(quantity, optList.size());
+                EXPECT_EQ(optList[0]->number(), o);
+                break;
+            }
+            case URI_QUERY:
+            {
+                EXPECT_EQ(quantity, 4UL);
+                EXPECT_EQ(quantity, optList.size());
+                EXPECT_EQ(optList[0]->number(), o);
+                EXPECT_EQ(optList[1]->number(), o);
+                EXPECT_EQ(optList[2]->number(), o);
+                EXPECT_EQ(optList[3]->number(), o);
+                break;
+            }
+            default:
+            {
+                EXPECT_TRUE(quantity == 0);
+                break;
+            }
+        }
+    }
+}
+
+static void set_testOptionValue(uint8_t offset)
+{
+    for(size_t i = 0; i < sizeof(testOptionValue); i++)
+    {
+        testOptionValue[i] = static_cast<uint8_t>(offset + i);
+    }
+}
+
+TEST(testPacket, addOption)
+{
+    error_code ec;
+    Packet packet;
+
+    packet.parse(testCoapPacket, sizeof(testCoapPacket), ec);
+    ASSERT_TRUE(!ec.value());
+
+    packet.options().clear();
+    uint8_t offset = 0;
+
+    for(auto o : testOptionSet)
+    {
+        set_testOptionValue(offset);
+        offset += 0x10;
+        packet.add_option(o, testOptionValue, sizeof(testOptionValue), ec);
+        EXPECT_TRUE(ec.value() == 0);
+    }
+
+#ifdef PRINT_TESTED_VALUES
+    print_options(packet);
+#endif
 }
 
 int main(int argc, char ** argv)
 {
-    cout << "Running main() from test_packet.cc\n";
+    info("Running main() from test_packet.cc");
 
     testing::InitGoogleTest(&argc, argv);
 

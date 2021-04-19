@@ -1,10 +1,12 @@
 #include "packet.h"
+#include "spdlog/spdlog.h"
 #include <cstdlib>
 #include <climits>
 #include <cassert>
 #include <cstring>
 
 using namespace std;
+using namespace spdlog;
 
 namespace coap
 {
@@ -144,7 +146,6 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
 
     const uint8_t * buf = static_cast<const uint8_t *>(buffer);
     const size_t start_offset = PACKET_HEADER_SIZE + token_length();
-    const uint8_t * const start_addr = &buf[start_offset];
 
     options().clear();
 
@@ -296,44 +297,32 @@ void Packet::add_option(
     sort_options();
 }
 
-const Option * Packet::find_option(const std::uint16_t number, size_t & quantity)
+size_t Packet::find_option(const std::uint16_t number, std::vector<Option *> &rOptions)
 {
-    size_t min = 0 , max = options().size(), mid  = 0;
-    quantity = 0;
+    size_t index = 0 , size = options().size();
+    size_t quantity = 0;
+    rOptions.clear();
 
     sort_options();
 
-    while (min <= max)
+    while (index < size)
     {
-        mid = (min + max) >> 1;
+        if (options()[index].number() == number)
+        {
+            // the option is found
+            do {
+                ++quantity;
+                rOptions.push_back(&options()[index]);
+            } while (++index < size && options()[index].number() == number); // search forward
 
-        if (options()[mid].number() < number)
-        {
-            min = mid + 1;
-        }
-        else if (options()[mid].number() > number)
-        {
-            max = mid - 1;
+            return quantity;
         }
         else
         {
-            size_t index = mid;
-            while (index >= min)
-            {
-                if (options()[--index].number() != number)
-                {
-                    min = index + 1;
-                    break;
-                }
-            }
-            while (options()[++index].number() == number)
-            {
-                ++quantity;
-            }
-            return &options()[mid];
+            index++;
         }
     }
-    return nullptr;
+    return quantity;
 }
 
 size_t Packet::get_option_nibble(size_t value)
@@ -550,6 +539,8 @@ void Packet::make_request(
         std::size_t tokenLength
     )
 {
+    set_level(level::debug);
+    debug("make_request() has not been implemented yet");
     //TODO
 }
 
@@ -562,6 +553,8 @@ void Packet::prepare_answer(
         size_t payloadSize
     )
 {
+    set_level(level::debug);
+    debug("prepare_answer() has not been implemented yet");
     //TODO
 }
 

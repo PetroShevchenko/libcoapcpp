@@ -6,18 +6,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wshadow -Wno-missing-field-initializers")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_CURRENT_LIST_DIR}/build")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_CURRENT_LIST_DIR}/build/third-party/spdlog")
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/api)
+
+#############################################################
+# spdlog library
+#############################################################
+
+set(SPDLOG_PATH ${CMAKE_CURRENT_LIST_DIR}/third-party/spdlog)
+
+include_directories(${SPDLOG_PATH}/include)
+
+add_subdirectory(${SPDLOG_PATH})
+
+#############################################################
+# coapcpp library
+#############################################################
 
 set(
     LIB_PROJECT_NAME
         "coapcpp"
 )
 
-set(
-    TEST_PROJECT_NAME
-        "test_coapcpp"
-)
+project (${LIB_PROJECT_NAME})
 
 set(
     SRC_DIR
@@ -27,11 +39,6 @@ set(
 set(
     INC_DIR
         ${CMAKE_CURRENT_LIST_DIR}/api
-)
-
-set(
-    TEST_DIR
-        ${CMAKE_CURRENT_LIST_DIR}/test
 )
 
 set(
@@ -47,25 +54,37 @@ set(
         ${SRC_DIR}/error.cc
 )
 
-set(
-    TEST_SRC_LIST
-       ${INC_DIR}/consts.h
-       ${INC_DIR}/error.h
-       ${INC_DIR}/packet.h
-       ${TEST_DIR}/test_packet.cc
-)
-
-project (${LIB_PROJECT_NAME})
+#target_compile_options(
+#    ${LIB_PROJECT_NAME} PRIVATE
+#        -Weffc++
+#        -Wundef
+#)
 
 add_library(
     ${LIB_PROJECT_NAME} STATIC
         ${LIB_SRC_LIST}
 )
 
-target_compile_options(
-    ${LIB_PROJECT_NAME} PRIVATE
-        -Weffc++
-        -Wundef
+#############################################################
+# unit tests
+#############################################################
+
+set(
+    TEST_PROJECT_NAME
+        "test_coapcpp"
+)
+
+set(
+    TEST_DIR
+        ${CMAKE_CURRENT_LIST_DIR}/test
+)
+
+set(
+    TEST_SRC_LIST
+       ${INC_DIR}/consts.h
+       ${INC_DIR}/error.h
+       ${INC_DIR}/packet.h
+       ${TEST_DIR}/test_packet.cc
 )
 
 add_executable(
@@ -86,6 +105,7 @@ target_include_directories(
 
 target_link_libraries(
     ${TEST_PROJECT_NAME}
-        coapcpp
+        spdlog
         pthread
+        coapcpp
 )

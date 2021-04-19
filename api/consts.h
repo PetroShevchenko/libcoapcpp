@@ -15,8 +15,8 @@ enum {
     PAYLOAD_MARKER                          = 0xFF
 };
 
-using MessageOffset =
-enum {
+enum MessageOffset
+{
     HEADER_OFFSET       = 0x0,
     HEADER_SIZE         = 0x1,
     CODE_OFFSET         = HEADER_OFFSET + HEADER_SIZE,
@@ -26,16 +26,16 @@ enum {
     TOKEN_OFFSET        = MESSAGE_ID_OFFSET + MESSAGE_ID_SIZE
 };
 
-using MessageType =
-enum {
+enum MessageType
+{
     CONFIRMABLE     = 0x0,
     NON_CONFIRMABLE = 0x1,
     ACKNOWLEDGEMENT = 0x2,
     RESET           = 0x3
 };
 
-using MessageCodeClass =
-enum {
+enum MessageCodeClass
+{
     METHOD          = (0x0 << 5),
     SUCCESS         = (0x2 << 5),
     CLIENT_ERROR    = (0x4 << 5),
@@ -43,8 +43,8 @@ enum {
     SIGNALING_CODES = (0x7 << 5)
 };
 
-using MessageCode =
-enum {
+enum MessageCode
+{
     EMPTY   = METHOD | 0x0,
     GET     = METHOD | 0x1,
     POST    = METHOD | 0x2,
@@ -85,15 +85,15 @@ enum {
     ABORT       = SIGNALING_CODES  | 0x5
 };
 
-using OptionDelta =
-enum {
+enum OptionDelta
+{
     MINUS_THIRTEEN = 13,
     MINUS_TWO_HUNDRED_SIXTY_NINE = 14,
     RESERVED_FOR_FUTURE = 15
 };
 
-using OptionNumber =
-enum {
+enum OptionNumber
+{
     IF_MATCH        = 0,
     URI_HOST        = 3,
     ETAG            = 4,
@@ -115,8 +115,8 @@ enum {
     OPTION_MAX_NUMBER = SIZE_1
 };
 
-using MediaType =
-enum {
+enum MediaType
+{
     TEXT_PLAIN      = 0,
     LINK_FORMAT     = 40,
     XML             = 41,
@@ -129,8 +129,8 @@ enum {
     LWM2M_JSON      = 11543 //application/vnd.oma.lwm2m+json
 };
 
-using MethodCode =
-enum {
+enum MethodCode
+{
     METHOD_GET,
     METHOD_POST,
     METHOD_PUT,

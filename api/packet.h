@@ -24,7 +24,7 @@ struct Option
     };
 
     Option()
-        : m_header{0}, m_number{0}, m_value{0}
+        : m_header{0}, m_number{0}, m_value{}
     {}
     ~Option()
     {}
@@ -110,6 +110,9 @@ struct Message
     std::uint8_t header_as_byte() const
     { return m_header.asByte; }
 
+    std::uint8_t type() const
+    { return m_header.asBitField.type; }
+
     std::uint8_t version() const
     { return m_header.asBitField.version; }
 
@@ -118,6 +121,12 @@ struct Message
 
     std::uint8_t code_as_byte() const
     { return m_code.asByte; }
+
+    std::uint8_t code_detail() const
+    { return m_code.asBitField.codeDetail; }
+
+    std::uint8_t code_class() const
+    { return m_code.asBitField.codeClass; }
 
     void identity(std::uint16_t value)
     { m_identity = value; }
@@ -190,10 +199,10 @@ public:
             std::error_code &ec
         );
 
-    const Option *
+    std::size_t
         find_option(
             const std::uint16_t number,
-            size_t & quantity
+            std::vector<Option *> &rOptions
         );
 
     void parse(
