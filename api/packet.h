@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <algorithm>
+#include <array>
 #include "consts.h"
 #include "error.h"
 
@@ -70,7 +71,9 @@ private:
 
 using OptionList = std::vector<Option>;
 
-using ByteArray = std::vector<uint8_t>;
+using PayloadType = std::vector<uint8_t>;
+
+using TokenType = std::array<std::uint8_t,TOKEN_MAX_LENGTH>;
 
 struct Message
 {
@@ -140,7 +143,7 @@ struct Message
     std::size_t token_length() const
     { return static_cast<std::size_t>(m_header.asBitField.tokenLength); }
 
-    std::uint8_t * token()
+    TokenType & token()
     { return m_token; }
 
     void payload_offset(std::size_t value)
@@ -149,7 +152,7 @@ struct Message
     std::size_t payload_offset() const
     { return m_payloadOffset; }
 
-    ByteArray &payload()
+    PayloadType &payload()
     { return m_payload; }
 
     void sort_options()
@@ -161,10 +164,10 @@ private:
     Header          m_header;
     Code            m_code;
     std::uint16_t   m_identity;
-    std::uint8_t    m_token[TOKEN_MAX_LENGTH];
+    TokenType       m_token;
     OptionList      m_options;
     std::size_t     m_payloadOffset;
-    ByteArray       m_payload;
+    PayloadType     m_payload;
 };
 
 bool is_little_endian_byte_order();

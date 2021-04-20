@@ -16,7 +16,13 @@ bool Message::generate_token(const std::size_t len)
     if (len > TOKEN_MAX_LENGTH)
         return false;
 
-    std::srand(time(nullptr));
+    static bool initialized = false;
+
+    if (!initialized )
+    {
+        std::srand(time(nullptr));
+        initialized  = true;
+    }
 
     for (std::size_t i = 0; i < len; i++)
     {
@@ -91,7 +97,7 @@ void Packet::parse_token(const void * buffer, size_t size, std::error_code &ec)
 
     const uint8_t * buf = static_cast<const uint8_t *>(buffer);
 
-    memcpy(token(), &buf[PACKET_HEADER_SIZE], token_length());
+    memcpy(token().data(), &buf[PACKET_HEADER_SIZE], token_length());
 }
 
 static bool parse_option(
@@ -450,7 +456,7 @@ void Packet::serialize(
     }
 
     if (token_length() != 0 && !checkBufferSizeOnly)
-        memcpy (&buf[offset], token(), token_length());
+        memcpy (&buf[offset], token().data(), token_length());
 
     offset += token_length();
 
@@ -567,7 +573,12 @@ bool is_little_endian_byte_order()
 
 uint16_t generate_identity()
 {
-    srand(time(nullptr));
+    static bool initialized  = false;
+    if (!initialized )
+    {
+        srand(time(nullptr));
+        initialized  = true;
+    }
     return static_cast<uint16_t>(rand() % (USHRT_MAX+ 1));
 }
 

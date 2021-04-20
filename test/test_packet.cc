@@ -112,7 +112,7 @@ TEST(testPacket, parse)
     EXPECT_EQ(packet.code_detail(), 2);
     EXPECT_EQ(packet.identity(), 5097);
 
-    int r = memcmp(&testCoapPacket[PACKET_HEADER_SIZE], packet.token(), packet.token_length());
+    int r = memcmp(&testCoapPacket[PACKET_HEADER_SIZE], packet.token().data(), packet.token_length());
 
     EXPECT_TRUE(r == 0);
 
@@ -248,6 +248,55 @@ TEST(testPacket, addOption)
 #ifdef PRINT_TESTED_VALUES
     print_options(packet);
 #endif
+}
+
+TEST(testPacket, isLittleEndianByteOrder)
+{
+#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) || (__LITTLE_ENDIAN__ == 1)
+    ASSERT_TRUE(is_little_endian_byte_order());
+#elif (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || (__BIG_ENDIAN__ == 1)
+    ASSERT_FALSE(is_little_endian_byte_order());
+#else
+    #error "The byte order is undefined or a compiler other than GCC is used"
+#endif
+}
+
+TEST(testPacket, generateIdentity)
+{
+    uint16_t uniqueId1 = generate_identity();
+    uint16_t uniqueId2 = generate_identity();
+
+#ifdef PRINT_TESTED_VALUES
+    info("unique indentity 1 : {0:x}", uniqueId1);
+    info("unique indentity 2 : {0:x}", uniqueId2);
+#endif
+    ASSERT_NE(uniqueId1, uniqueId2);
+}
+
+TEST(testPacket, generateToken)
+{
+    Packet packet;
+    bool r = packet.generate_token(TOKEN_MAX_LENGTH);
+    ASSERT_TRUE(r);
+
+    uint8_t token[TOKEN_MAX_LENGTH];
+    memcpy(token, packet.token().data(), TOKEN_MAX_LENGTH);
+
+    r = packet.generate_token(TOKEN_MAX_LENGTH);
+    ASSERT_TRUE(r);
+
+#ifdef PRINT_TESTED_VALUES
+    info("generated unique token 1 :");
+    fmt::print("{:02x}", fmt::join(token, ", "));
+    fmt::print("\n");
+    info("generated unique token 2 :");
+    fmt::print("{:02x}", fmt::join(packet.token(), ", "));
+    fmt::print("\n");
+#endif
+
+    int r2 = memcmp(token, packet.token().data(), TOKEN_MAX_LENGTH);
+
+    ASSERT_TRUE(r2 != 0);
 }
 
 int main(int argc, char ** argv)
