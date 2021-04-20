@@ -4,16 +4,14 @@
 namespace coap
 {
 
-enum {
-    COAP_VERSION                            = 0x1,
-    PACKET_HEADER_SIZE                      = 4,
-    PACKET_MIN_LENGTH                       = PACKET_HEADER_SIZE,
-    TOKEN_MAX_LENGTH                        = 8,
-    MINUS_THIRTEEN_OPT_VALUE                = 13,
-    MINUS_TWO_HUNDRED_SIXTY_NINE_OPT_VALUE  = 269,
-    OPTION_MAX_LENGTH                       = 256,
-    PAYLOAD_MARKER                          = 0xFF
-};
+const std::uint8_t COAP_VERSION = 0x1;
+const std::uint8_t PACKET_HEADER_SIZE = 4;
+const std::uint8_t PACKET_MIN_LENGTH = PACKET_HEADER_SIZE;
+const std::uint8_t TOKEN_MAX_LENGTH = 8;
+const std::uint8_t MINUS_THIRTEEN_OPT_VALUE = 13;
+const std::uint16_t MINUS_TWO_HUNDRED_SIXTY_NINE_OPT_VALUE = 269;
+const std::uint16_t OPTION_MAX_LENGTH = 256;
+const std::uint8_t PAYLOAD_MARKER = 0xFF;
 
 enum MessageOffset
 {

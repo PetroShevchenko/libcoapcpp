@@ -97,6 +97,10 @@ TEST(testPacket, parse)
     info("message id : {0:d}", packet.identity());
     info("options :");
     print_options(packet);
+    info("payload size: {0:d}", packet.payload().size());
+    info("payload : ");
+    fmt::print("{:02x}", fmt::join(packet.payload(), ", "));
+    fmt::print("\n");
 #endif
 
 
@@ -109,6 +113,10 @@ TEST(testPacket, parse)
     EXPECT_EQ(packet.identity(), 5097);
 
     int r = memcmp(&testCoapPacket[PACKET_HEADER_SIZE], packet.token(), packet.token_length());
+
+    EXPECT_TRUE(r == 0);
+
+    r = memcmp(&testCoapPacket[packet.payload_offset()], packet.payload().data(), packet.payload().size());
 
     EXPECT_TRUE(r == 0);
 }
