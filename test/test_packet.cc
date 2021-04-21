@@ -9,7 +9,7 @@ using namespace std;
 using namespace coap;
 using namespace spdlog;
 
-#define PRINT_TESTED_VALUES
+//#define PRINT_TESTED_VALUES
 
 /*
     RFC7252 : CoAp frame format
@@ -67,6 +67,7 @@ static uint8_t testOptionValue[32] = {0};
 #ifdef PRINT_TESTED_VALUES
 static void print_options(const Packet & packet)
 {
+    info("options :");
     for (auto opt : const_cast<Packet &>(packet).options())
     {
         info("number : {0:d}", opt.number());
@@ -95,7 +96,6 @@ TEST(testPacket, parse)
     info("code detail : {0:d}", packet.code_detail());
     info("code class : {0:d}", packet.code_class());
     info("message id : {0:d}", packet.identity());
-    info("options :");
     print_options(packet);
     info("payload size: {0:d}", packet.payload().size());
     info("payload : ");
@@ -226,6 +226,20 @@ static void set_testOptionValue(uint8_t offset)
     }
 }
 
+static void create_testOptions(Packet & packet, error_code & ec)
+{
+    uint8_t offset = 0;
+
+    for(auto o : testOptionSet)
+    {
+        set_testOptionValue(offset);
+        offset += 0x10;
+        packet.add_option(o, testOptionValue, sizeof(testOptionValue), ec);
+        if (ec.value())
+            return;
+    }
+}
+
 TEST(testPacket, addOption)
 {
     error_code ec;
@@ -235,15 +249,10 @@ TEST(testPacket, addOption)
     ASSERT_TRUE(!ec.value());
 
     packet.options().clear();
-    uint8_t offset = 0;
 
-    for(auto o : testOptionSet)
-    {
-        set_testOptionValue(offset);
-        offset += 0x10;
-        packet.add_option(o, testOptionValue, sizeof(testOptionValue), ec);
-        EXPECT_TRUE(ec.value() == 0);
-    }
+    create_testOptions(packet, ec);
+
+    EXPECT_TRUE(ec.value() == 0);
 
 #ifdef PRINT_TESTED_VALUES
     print_options(packet);
@@ -297,6 +306,61 @@ TEST(testPacket, generateToken)
     int r2 = memcmp(token, packet.token().data(), TOKEN_MAX_LENGTH);
 
     ASSERT_TRUE(r2 != 0);
+}
+
+TEST(testPacket, makeRequestAndPrepareAnswer)
+{
+    error_code ec;
+
+    Packet packet;
+
+    create_testOptions(packet, ec);
+
+    ASSERT_TRUE(!ec.value());
+
+    uint16_t id = generate_identity();
+
+    packet.make_request(ec, CONFIRMABLE, PUT, id, nullptr, 0);
+
+    ASSERT_TRUE(!ec.value());
+
+#ifdef PRINT_TESTED_VALUES
+    info("version : {0:d}", packet.version());
+    info("type : {0:d}", packet.type());
+    info("token length : {0:d}", packet.token_length());
+    info("code : {0:d}",packet.code_as_byte());
+    info("identity: {0:d}", packet.identity());
+    info("token :");
+    fmt::print("{:02x}", fmt::join(packet.token(), ", "));
+    fmt::print("\n");
+#endif
+
+    ASSERT_EQ(packet.token_length(), TOKEN_MAX_LENGTH);
+    ASSERT_EQ(id, packet.identity());
+    ASSERT_EQ(packet.type(), CONFIRMABLE);
+    ASSERT_EQ(packet.code_as_byte(),PUT);
+
+    id = generate_identity();
+
+    packet.prepare_answer(ec, ACKNOWLEDGEMENT, PUT, id, nullptr, 0);
+
+    ASSERT_TRUE(!ec.value());
+
+#ifdef PRINT_TESTED_VALUES
+    info("version : {0:d}", packet.version());
+    info("type : {0:d}", packet.type());
+    info("token length : {0:d}", packet.token_length());
+    info("code : {0:d}",packet.code_as_byte());
+    info("identity: {0:d}", packet.identity());
+    info("token :");
+    fmt::print("{:02x}", fmt::join(packet.token(), ", "));
+    fmt::print("\n");
+#endif
+
+    ASSERT_EQ(packet.token_length(), TOKEN_MAX_LENGTH);
+    ASSERT_EQ(id, packet.identity());
+    ASSERT_EQ(packet.type(), ACKNOWLEDGEMENT);
+    ASSERT_EQ(packet.code_as_byte(),PUT);
 }
 
 int main(int argc, char ** argv)

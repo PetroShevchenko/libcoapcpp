@@ -535,6 +535,9 @@ void Packet::serialize(
     }
 }
 
+/* Before calling of this method you should call add_option to create needed options.
+   payload should be in network bytes order
+*/
 void Packet::make_request(
         std::error_code &ec,
         MessageType type,   // message type
@@ -545,9 +548,42 @@ void Packet::make_request(
         std::size_t tokenLength
     )
 {
-    set_level(level::debug);
-    debug("make_request() has not been implemented yet");
-    //TODO
+    assert((payloadSize == 0 && payload == nullptr) || (payloadSize != 0 && payload != nullptr));
+    assert(tokenLength <= TOKEN_MAX_LENGTH);
+
+    ec.clear();
+
+    if ((payloadSize != 0 && payload == nullptr)
+        || (payloadSize == 0 && payload != nullptr) )
+    {
+        ec = make_system_error(EFAULT);
+        return;
+    }
+
+    if (tokenLength > TOKEN_MAX_LENGTH)
+    {
+        ec = make_system_error(EINVAL);
+        return;
+    }
+
+    version(COAP_VERSION);
+    this->type(static_cast<std::uint8_t>(type));
+    identity(id);
+    code_as_byte(static_cast<std::uint8_t>(code));
+
+    generate_token(tokenLength);
+
+    this->payload().clear();
+
+    const uint8_t * data = static_cast<const uint8_t *>(payload);
+
+    if (payloadSize > 0)
+    {
+        for (size_t i = 0; i < payloadSize; i++)
+        {
+            this->payload().push_back(data[i]);
+        }
+    }
 }
 
 void Packet::prepare_answer(
@@ -559,9 +595,26 @@ void Packet::prepare_answer(
         size_t payloadSize
     )
 {
-    set_level(level::debug);
-    debug("prepare_answer() has not been implemented yet");
-    //TODO
+    assert((payloadSize == 0 && payload == nullptr) || (payloadSize != 0 && payload != nullptr));
+
+    ec.clear();
+
+    version(COAP_VERSION);
+    this->type(static_cast<std::uint8_t>(type));
+    identity(id);
+    code_as_byte(static_cast<std::uint8_t>(code));
+
+    this->payload().clear();
+
+    const uint8_t * data = static_cast<const uint8_t *>(payload);
+
+    if (payloadSize > 0)
+    {
+        for (size_t i = 0; i < payloadSize; i++)
+        {
+            this->payload().push_back(data[i]);
+        }
+    }
 }
 
 bool is_little_endian_byte_order()

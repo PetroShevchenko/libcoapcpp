@@ -116,8 +116,14 @@ struct Message
     std::uint8_t type() const
     { return m_header.asBitField.type; }
 
+    void type(std::uint8_t value)
+    { m_header.asBitField.type = value; }
+
     std::uint8_t version() const
     { return m_header.asBitField.version; }
+
+    void version(std::uint8_t value)
+    { m_header.asBitField.version = value; }
 
     void code_as_byte(std::uint8_t value)
     { m_code.asByte = value; }
