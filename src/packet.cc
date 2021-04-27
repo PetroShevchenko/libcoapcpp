@@ -363,7 +363,7 @@ void make_option(
 {
     ec.clear();
 
-    if (buffer == nullptr)
+    if (!checkBufferSizeOnly && buffer == nullptr)
     {
         ec = make_system_error(EFAULT);
         return;
@@ -400,7 +400,7 @@ void Packet::serialize(
     )
 {
 #define exit_if_buffer_overflow(o, s, e, f)\
-        if (!f && o >= s)\
+        if (!f && o > s)\
         {\
             assert(0);\
             e = make_error_code(CoapStatus::COAP_ERR_BUFFER_SIZE);\
@@ -408,6 +408,8 @@ void Packet::serialize(
         }
 
     ec.clear();
+
+    set_level(level::debug);
 
     if (!checkBufferSizeOnly)
     {
@@ -535,14 +537,14 @@ void Packet::serialize(
     }
 }
 
-/* Before calling of this method you should call add_option to create needed options.
-   payload should be in network bytes order
+/* Before calling of this method you should call add_option() to create needed options.
+   Payload should be in the network byte order
 */
 void Packet::make_request(
         std::error_code &ec,
         MessageType type,   // message type
         MessageCode code,   // response code
-        uint16_t id,             // message identity
+        uint16_t id,        // message identity
         const void * payload,
         size_t payloadSize,
         std::size_t tokenLength
@@ -590,7 +592,7 @@ void Packet::prepare_answer(
         std::error_code &ec,
         MessageType type,   // message type
         MessageCode code,   // response code
-        uint16_t id,             // message identity
+        uint16_t id,        // message identity
         const void * payload,
         size_t payloadSize
     )

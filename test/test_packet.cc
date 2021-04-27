@@ -9,7 +9,7 @@ using namespace std;
 using namespace coap;
 using namespace spdlog;
 
-//#define PRINT_TESTED_VALUES
+#define PRINT_TESTED_VALUES
 
 /*
     RFC7252 : CoAp frame format
@@ -308,7 +308,7 @@ TEST(testPacket, generateToken)
     ASSERT_TRUE(r2 != 0);
 }
 
-TEST(testPacket, makeRequestAndPrepareAnswer)
+TEST(testPacket, makeRequest)
 {
     error_code ec;
 
@@ -325,6 +325,7 @@ TEST(testPacket, makeRequestAndPrepareAnswer)
     ASSERT_TRUE(!ec.value());
 
 #ifdef PRINT_TESTED_VALUES
+    info("Prepared request:");
     info("version : {0:d}", packet.version());
     info("type : {0:d}", packet.type());
     info("token length : {0:d}", packet.token_length());
@@ -339,6 +340,28 @@ TEST(testPacket, makeRequestAndPrepareAnswer)
     ASSERT_EQ(id, packet.identity());
     ASSERT_EQ(packet.type(), CONFIRMABLE);
     ASSERT_EQ(packet.code_as_byte(),PUT);
+}
+
+TEST(testPacket, prepareAnswer)
+{
+    error_code ec;
+
+    Packet packet;
+
+    create_testOptions(packet, ec);
+
+    ASSERT_TRUE(!ec.value());
+
+    uint16_t id = generate_identity();
+
+    packet.make_request(ec, CONFIRMABLE, PUT, id, nullptr, 0);
+
+    ASSERT_TRUE(!ec.value());
+
+    ASSERT_EQ(packet.token_length(), TOKEN_MAX_LENGTH);
+    ASSERT_EQ(id, packet.identity());
+    ASSERT_EQ(packet.type(), CONFIRMABLE);
+    ASSERT_EQ(packet.code_as_byte(),PUT);
 
     id = generate_identity();
 
@@ -347,6 +370,7 @@ TEST(testPacket, makeRequestAndPrepareAnswer)
     ASSERT_TRUE(!ec.value());
 
 #ifdef PRINT_TESTED_VALUES
+    info("Prepared answer:");
     info("version : {0:d}", packet.version());
     info("type : {0:d}", packet.type());
     info("token length : {0:d}", packet.token_length());
@@ -361,6 +385,83 @@ TEST(testPacket, makeRequestAndPrepareAnswer)
     ASSERT_EQ(id, packet.identity());
     ASSERT_EQ(packet.type(), ACKNOWLEDGEMENT);
     ASSERT_EQ(packet.code_as_byte(),PUT);
+}
+
+TEST(testPacket, serialize)
+{
+    error_code ec;
+
+    Packet packet;
+
+    ec.clear();
+
+{
+    uint8_t value[] = { 0x72, 0x64 };
+    packet.add_option(URI_PATH, value, sizeof(value), ec);
+    ASSERT_TRUE(!ec.value());
+}
+
+{
+    uint8_t value[] = { 0x28 };
+    packet.add_option(CONTENT_FORMAT, value, sizeof(value), ec);
+    ASSERT_TRUE(!ec.value());
+}
+
+{
+    uint8_t value[] = { 0x6c, 0x77, 0x6d, 0x32, 0x6d, 0x3d, 0x31, 0x2e, 0x31 };
+    packet.add_option(URI_QUERY, value, sizeof(value), ec);
+    ASSERT_TRUE(!ec.value());
+}
+
+{
+    uint8_t value[] = { 0x65, 0x70, 0x3d, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74 };
+    packet.add_option(URI_QUERY, value, sizeof(value), ec);
+    ASSERT_TRUE(!ec.value());
+}
+
+{
+    uint8_t value[] = { 0x62, 0x3d, 0x55 };
+    packet.add_option(URI_QUERY, value, sizeof(value), ec);
+    ASSERT_TRUE(!ec.value());
+}
+
+{
+    uint8_t value[] = { 0x6c, 0x74, 0x3d, 0x33, 0x36, 0x30 };
+    packet.add_option(URI_QUERY, value, sizeof(value), ec);
+    ASSERT_TRUE(!ec.value());
+}
+
+    uint16_t id = generate_identity();
+
+    packet.make_request(ec, CONFIRMABLE, POST, id, &testCoapPacket[51], 110);
+
+    ASSERT_TRUE(!ec.value());
+
+    size_t size;
+
+    packet.serialize(ec, nullptr, size, true);
+
+    ASSERT_TRUE(!ec.value());
+
+    uint8_t * buffer = new uint8_t [size];
+
+    packet.serialize(ec, buffer, size);
+
+    ASSERT_TRUE(!ec.value());
+
+#ifdef PRINT_TESTED_VALUES
+    info("Serialized packet :");
+    for (size_t i = 0; i < size; i++)
+    {
+        fmt::print("{:02x}", buffer[i]);
+        fmt::print(" ,");
+        if (i != 0 && (i + 1) % 16 == 0)
+            fmt::print("\n");
+    }
+    fmt::print("\n");
+#endif
+
+    delete [] buffer;
 }
 
 int main(int argc, char ** argv)
