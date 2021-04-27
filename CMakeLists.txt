@@ -87,6 +87,7 @@ set(
        ${INC_DIR}/error.h
        ${INC_DIR}/packet.h
        ${TEST_DIR}/test_packet.cc
+       ${TEST_DIR}/test_uri.cc
 )
 
 add_executable(
@@ -103,6 +104,8 @@ target_include_directories(
     ${TEST_PROJECT_NAME} PRIVATE
         $ENV{GTEST_DIR}
         $ENV{GTEST_DIR}/include
+        ${SRC_DIR}
+        ${INC_DIR}
 )
 
 target_link_libraries(

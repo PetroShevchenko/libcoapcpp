@@ -1,4 +1,5 @@
 #include "packet.h"
+#include "test_conf.h"
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
@@ -8,8 +9,6 @@
 using namespace std;
 using namespace coap;
 using namespace spdlog;
-
-#define PRINT_TESTED_VALUES
 
 /*
     RFC7252 : CoAp frame format
