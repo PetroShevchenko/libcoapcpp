@@ -26,6 +26,7 @@ enum class CoapStatus
     COAP_ERR_URI_NOT_FOUND,
     COAP_ERR_SERVER_CODE,
     COAP_ERR_DECODE_BLOCK_OPTION,
+    COAP_ERR_SOCKET_DOMAIN,
 };
 
 namespace std

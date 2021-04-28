@@ -82,6 +82,9 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_DECODE_BLOCK_OPTION:
             return "Unable to decode block-wise option";
+
+        case CoapStatus::COAP_ERR_SOCKET_DOMAIN:
+            return "Unsupported socket domain";
     }
     return "Unknown error";
 }

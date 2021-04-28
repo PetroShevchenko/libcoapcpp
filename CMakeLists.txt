@@ -45,7 +45,6 @@ set(
 
 set(
     LIB_SRC_LIST
-        ${SRC_DIR}/socket.cc
         ${SRC_DIR}/packet.cc
         ${SRC_DIR}/uri.h
         ${SRC_DIR}/uri.cc
@@ -54,6 +53,19 @@ set(
         ${SRC_DIR}/blockwise.h
         ${SRC_DIR}/blockwise.cc
         ${SRC_DIR}/error.cc
+        ${SRC_DIR}/unix/unix_socket.cc
+)
+
+add_library(
+    ${LIB_PROJECT_NAME} STATIC
+        ${LIB_SRC_LIST}
+)
+
+target_include_directories(
+    ${LIB_PROJECT_NAME} PRIVATE
+        ${INC_DIR}
+        ${SRC_DIR}
+        ${SRC_DIR}/unix
 )
 
 #target_compile_options(
@@ -61,11 +73,6 @@ set(
 #        -Weffc++
 #        -Wundef
 #)
-
-add_library(
-    ${LIB_PROJECT_NAME} STATIC
-        ${LIB_SRC_LIST}
-)
 
 #############################################################
 # unit tests
