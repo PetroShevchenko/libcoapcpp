@@ -3,6 +3,7 @@
 #include "socket.h"
 #include "error.h"
 #include <netinet/in.h>
+#include <memory>
 
 class UnixSocketAddress : public SocketAddress
 {
@@ -57,6 +58,7 @@ class UnixSocket : public Socket
 {
 public:
     UnixSocket()
+    : m_descriptor{-1}, m_address{nullptr}
     {}
 
     UnixSocket(int domain, int type, int protocol, std::error_code &ec);
@@ -71,17 +73,24 @@ public:
     void bind(const SocketAddress * addr, std::error_code &ec) override;
     Socket * accept(std::error_code * ec = nullptr) override;
     void listen(std::error_code &ec, int max_connections_in_queue = 1) override;
-    void set_blocking(bool blocking) override;
-    void set_timeout(size_t timeout) override;
+    void set_blocking(bool blocking, std::error_code &ec) override;
+    void set_timeout(size_t timeout, std::error_code &ec) override;
     void setsockoption(int level, int option_name, const void *option_value, std::size_t option_len, std::error_code &ec) override;
     void getsockoption(int level, int option_name, void *option_value, std::size_t *option_len, std::error_code &ec) override;
 
+public:
+    void descriptor(int value)
+    { m_descriptor = value; }
+
+    int descriptor() const
+    { return m_descriptor; }
+
+    std::shared_ptr<UnixSocketAddress> & address()
+    { return m_address; }
+
 private:
     int m_descriptor;
-/*    int m_domain;
-    int m_type;
-    int m_protocol;*/
-    SocketAddress * m_address;
+    std::shared_ptr<UnixSocketAddress> m_address;
 };
 
 #endif

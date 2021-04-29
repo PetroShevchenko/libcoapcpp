@@ -10,6 +10,9 @@ enum SocketType
     SOCKET_TYPE_UNSPEC
 };
 
+inline bool is_socket_type(SocketType type)
+{ return !(type < SOCKET_TYPE_IP_V4 || type > SOCKET_TYPE_UNSPEC); }
+
 struct SocketAddress
 {
     SocketAddress(SocketType type)
@@ -42,8 +45,8 @@ struct Socket
     virtual void bind(const SocketAddress * addr, std::error_code &ec) = 0;
     virtual Socket * accept(std::error_code * ec = nullptr) = 0;
     virtual void listen(std::error_code &ec, int max_connections_in_queue = 1);
-    virtual void set_blocking(bool blocking) = 0;
-    virtual void set_timeout(size_t timeout) = 0;
+    virtual void set_blocking(bool blocking, std::error_code &ec) = 0;
+    virtual void set_timeout(size_t timeout, std::error_code &ec) = 0;
     virtual void setsockoption(int level, int option_name, const void *option_value, std::size_t option_len, std::error_code &ec) = 0;
     virtual void getsockoption(int level, int option_name, void *option_value, std::size_t *option_len, std::error_code &ec) = 0;
 };

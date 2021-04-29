@@ -37,4 +37,18 @@ template<> struct is_error_condition_enum<CoapStatus> : public true_type {};
 std::error_code make_error_code (CoapStatus e);
 std::error_code make_system_error (int e);
 
+enum class SocketStatus
+{
+    SOCKET_OK = 0,
+    SOCKET_ERR_DOMAIN,
+    SOCKET_ERR_MEMORY,
+};
+
+namespace std
+{
+template<> struct is_error_condition_enum<SocketStatus> : public true_type {};
+}
+
+std::error_code make_error_code (SocketStatus e);
+
 #endif
