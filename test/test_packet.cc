@@ -1,5 +1,4 @@
 #include "packet.h"
-#include "test_conf.h"
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>

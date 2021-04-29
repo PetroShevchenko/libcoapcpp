@@ -102,6 +102,11 @@ add_executable(
         ${TEST_SRC_LIST}
 )
 
+target_compile_definitions(
+    ${TEST_PROJECT_NAME} PRIVATE
+        PRINT_TESTED_VALUES
+)
+
 target_sources(
     ${TEST_PROJECT_NAME} PRIVATE
         $ENV{GTEST_DIR}/src/gtest-all.cc
