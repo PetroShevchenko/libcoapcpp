@@ -100,6 +100,7 @@ set(
        ${TEST_DIR}/test_uri.cc
        ${TEST_DIR}/test_dns_resolver.cc
        ${TEST_DIR}/test_socket.cc
+       ${TEST_DIR}/test_connection.cc
 )
 
 add_executable(

@@ -29,6 +29,7 @@ enum class CoapStatus
     COAP_ERR_SOCKET_DOMAIN,
     COAP_ERR_MEMORY_ALLOCATE,
     COAP_ERR_NOT_IMPLEMENTED,
+    COAP_ERR_NOT_CONNECTED,
 };
 
 namespace std

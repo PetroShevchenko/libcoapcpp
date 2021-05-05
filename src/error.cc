@@ -91,6 +91,9 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_NOT_IMPLEMENTED:
             return "This feature is not implemented";
+
+        case CoapStatus::COAP_ERR_NOT_CONNECTED:
+            return "The connection is not established";
     }
     return "Unknown error";
 }

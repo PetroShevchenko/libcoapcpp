@@ -12,6 +12,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
+#include <spdlog/spdlog.h>
+
+using namespace spdlog;
 
 UnixConnection::UnixConnection(
             ConnectionType type,
@@ -53,6 +56,8 @@ UnixConnection::~UnixConnection()
         delete m_socket;
     if (m_dns)
         delete m_dns;
+    if (m_sockAddr)
+        delete m_sockAddr;
 }
 
 Socket * UnixConnection::create_socket(std::error_code &ec)
@@ -75,17 +80,17 @@ Socket * UnixConnection::create_socket(std::error_code &ec)
     else
         socktype = SOCK_DGRAM;
 
-    return new UnixSocket(domain, socktype, 0, ec);
-}
-
-void UnixConnection::connect(std::error_code &ec)
-{
-    if (m_type != ConnectionType::UDP)
+    Socket * sock = new UnixSocket(domain, socktype, 0, ec);
+    if (sock == nullptr)
     {
-        ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
-        return;
+        ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
     }
 
+    return sock;
+}
+
+void UnixUdpClientConnection::connect(std::error_code &ec)
+{
     if (!m_dns->hostname2address())
     {
         ec = make_error_code(CoapStatus::COAP_ERR_RESOLVE_ADDRESS);
@@ -127,14 +132,14 @@ void UnixConnection::connect(std::error_code &ec)
 
     m_socket = create_socket(ec);
 
-    if (m_socket == nullptr)
+    if (ec.value())
     {
-        ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
-        return;
+        delete m_sockAddr;
+        m_sockAddr = nullptr;
     }
 }
 
-void UnixConnection::disconnect(std::error_code &ec)
+void UnixUdpClientConnection::disconnect(std::error_code &ec)
 {
     ec.clear();
     if (m_socket)
@@ -142,22 +147,137 @@ void UnixConnection::disconnect(std::error_code &ec)
         delete m_socket;
         m_socket = nullptr;
     }
+    if (m_sockAddr)
+    {
+        delete m_sockAddr;
+        m_sockAddr = nullptr;
+    }
 }
-#if 0
-ssize_t UnixSocket::sendto(
-            const void * buf,
-            size_t len,
-            const SocketAddress * addr,
-            error_code &ec
+
+void UnixUdpClientConnection::send(const void * buffer, size_t length, std::error_code &ec)
+{
+    if (m_socket == nullptr)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_NOT_CONNECTED);
+        return;
+    }
+    ssize_t sent = m_socket->sendto(buffer, length, static_cast<const SocketAddress *>(m_sockAddr), ec);
+    if (!ec.value())
+    {
+        if (static_cast<size_t>(sent) != length)
+        {
+            ec = make_error_code(CoapStatus::COAP_ERR_INCOMPLETE_SEND);
+        }
+    }
+}
+
+void UnixUdpClientConnection::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
+{
+    if (m_socket == nullptr)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_NOT_CONNECTED);
+        return;
+    }
+    if (seconds)
+    {
+        m_socket->set_blocking(false, ec);
+        if(ec.value())
+            return;
+
+        m_socket->set_timeout(seconds, ec);
+        if(ec.value())
+            return;
+    }
+    else
+    {
+        m_socket->set_blocking(true, ec);
+        if(ec.value())
+            return;
+    }
+
+    ssize_t received = m_socket->recvfrom(buffer, length, m_sockAddr, ec);
+    if (!ec.value())
+    {
+        length = static_cast<size_t>(received);
+    }
+}
+
+void UnixDtlsClientConnection::connect(std::error_code &ec)
+{
+    //TODO
+}
+
+void UnixDtlsClientConnection::disconnect(std::error_code &ec)
+{
+    //TODO
+}
+
+void UnixDtlsClientConnection::send(const void * buffer, size_t length, std::error_code &ec)
+{
+    //TODO
+}
+
+void UnixDtlsClientConnection::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
+{
+    //TODO
+}
+
+Connection * create_client_connection(
+            ConnectionType type,
+            const char * hostname,
+            int port,
+            std::error_code &ec
         )
-#endif
-
-void UnixConnection::send(std::error_code &ec)
 {
-//TODO
+    switch(type)
+    {
+        case UDP:
+            return new UnixUdpClientConnection(hostname, port, ec);
+
+        case DTLS:
+            return new UnixDtlsClientConnection(hostname, port, ec);
+
+        case TCP:
+        case TLS:
+            ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
+            break;
+
+        default:
+            ec = make_system_error(EINVAL);
+            break;
+    }
+    return nullptr;
 }
 
-void UnixConnection::receive(std::error_code &ec)
+Connection * create_client_connection(
+            const char * uri,
+            std::error_code &ec
+        )
 {
-//TODO
+    ConnectionType type;
+
+    if (!uri2connection_type(uri, type))
+    {
+        ec = make_system_error(EINVAL);
+        return nullptr;
+    }
+
+    switch(type)
+    {
+        case UDP:
+            return new UnixUdpClientConnection(uri, ec);
+
+        case DTLS:
+            return new UnixDtlsClientConnection(uri, ec);
+
+        case TCP:
+        case TLS:
+            ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
+            break;
+
+        default:
+            ec = make_system_error(EINVAL);
+            break;
+    }
+    return nullptr;
 }
