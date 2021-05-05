@@ -4,6 +4,8 @@
 #include "error.h"
 #include <netinet/in.h>
 #include <memory>
+#include <typeinfo>
+#include <iostream>
 
 class UnixSocketAddress : public SocketAddress
 {
@@ -37,7 +39,7 @@ public:
           m_address6{addr}
     {}
 
-    ~UnixSocketAddress() = default;
+    ~UnixSocketAddress() override = default;
 
 public:
     const sockaddr_in & address4() const
@@ -63,7 +65,7 @@ public:
 
     UnixSocket(int domain, int type, int protocol, std::error_code &ec);
 
-    ~UnixSocket();
+    ~UnixSocket() override;
 
 public:
     void close(std::error_code &ec) override;

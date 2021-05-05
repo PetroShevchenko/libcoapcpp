@@ -57,7 +57,7 @@ UnixSocket::UnixSocket(
             : m_descriptor{-1},
               m_address{nullptr}
 {
-    m_descriptor = socket(domain, type, protocol);
+    m_descriptor = ::socket(domain, type, protocol);
 
     if (m_descriptor < 0)
     {
@@ -217,7 +217,7 @@ ssize_t UnixSocket::recvfrom(
     }
     else
     {
-        ec = make_error_code(SocketStatus::SOCKET_ERR_DOMAIN);
+        ec = make_error_code(CoapStatus::COAP_ERR_SOCKET_DOMAIN);
         return -1;
     }
     return received;
@@ -264,7 +264,7 @@ Socket * UnixSocket::accept(error_code * ec)
          && address.sa_family != AF_INET6)
     {
         if (ec)
-            *ec = make_error_code(SocketStatus::SOCKET_ERR_DOMAIN);
+            *ec = make_error_code(CoapStatus::COAP_ERR_SOCKET_DOMAIN);
         return nullptr;
     }
 
@@ -273,7 +273,7 @@ Socket * UnixSocket::accept(error_code * ec)
     if (newSocket == nullptr)
     {
         if (ec)
-            *ec = make_error_code(SocketStatus::SOCKET_ERR_MEMORY);
+            *ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
         return nullptr;
     }
 

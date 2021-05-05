@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wshadow -Wno-missing-field-initializers")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -o0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -o0 -frtti")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_CURRENT_LIST_DIR}/build")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_CURRENT_LIST_DIR}/build/third-party/spdlog")
 
@@ -53,7 +53,10 @@ set(
         ${SRC_DIR}/blockwise.h
         ${SRC_DIR}/blockwise.cc
         ${SRC_DIR}/error.cc
+        ${SRC_DIR}/utils.cc
         ${SRC_DIR}/unix/unix_socket.cc
+        ${SRC_DIR}/unix/unix_dns_resolver.cc
+        ${SRC_DIR}/unix/unix_connection.cc
 )
 
 add_library(
@@ -95,6 +98,8 @@ set(
        ${INC_DIR}/packet.h
        ${TEST_DIR}/test_packet.cc
        ${TEST_DIR}/test_uri.cc
+       ${TEST_DIR}/test_dns_resolver.cc
+       ${TEST_DIR}/test_socket.cc
 )
 
 add_executable(
@@ -116,13 +121,14 @@ target_include_directories(
     ${TEST_PROJECT_NAME} PRIVATE
         $ENV{GTEST_DIR}
         $ENV{GTEST_DIR}/include
-        ${SRC_DIR}
         ${INC_DIR}
+        ${SRC_DIR}
+        ${SRC_DIR}/unix
 )
 
 target_link_libraries(
     ${TEST_PROJECT_NAME}
+        coapcpp
         spdlog
         pthread
-        coapcpp
 )

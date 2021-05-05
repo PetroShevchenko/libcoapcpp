@@ -85,6 +85,12 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_SOCKET_DOMAIN:
             return "Unsupported socket domain";
+
+        case CoapStatus::COAP_ERR_MEMORY_ALLOCATE:
+            return "Unable to allocate memory";
+
+        case CoapStatus::COAP_ERR_NOT_IMPLEMENTED:
+            return "This feature is not implemented";
     }
     return "Unknown error";
 }
@@ -103,39 +109,3 @@ std::error_code make_system_error (int e)
     return {e, std::generic_category()};
 }
 
-namespace
-{
-
-struct SocketErrorCategory : public std::error_category
-{
-    const char* name() const noexcept override;
-    std::string message(int ev) const override;
-};
-
-const char* SocketErrorCategory::name() const noexcept
-{ return "socket"; }
-
-std::string SocketErrorCategory::message(int ev) const
-{
-    switch((SocketStatus)ev)
-    {
-        case SocketStatus::SOCKET_OK:
-            return "Success";
-
-        case SocketStatus::SOCKET_ERR_DOMAIN:
-            return "Unsupported socket domain";
-
-        case SocketStatus::SOCKET_ERR_MEMORY:
-            return "Unable to allocate memory";
-    }
-    return "Unknown error";
-}
-
-const SocketErrorCategory theSocketErrorCategory {};
-
-} // namespace
-
-std::error_code make_error_code (SocketStatus e)
-{
-    return {static_cast<int>(e), theSocketErrorCategory};
-}
