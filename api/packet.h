@@ -48,6 +48,9 @@ struct Option
     void number(std::uint16_t value)
     { m_number = value; }
 
+    const std::vector<std::uint8_t> &value() const
+    { return static_cast<const std::vector<std::uint8_t> &>(m_value); }
+
     std::vector<std::uint8_t> &value()
     { return m_value; }
 
@@ -71,7 +74,7 @@ private:
 
 using OptionList = std::vector<Option>;
 
-using PayloadType = std::vector<uint8_t>;
+using PayloadType = std::vector<std::uint8_t>;
 
 using TokenType = std::array<std::uint8_t,TOKEN_MAX_LENGTH>;
 

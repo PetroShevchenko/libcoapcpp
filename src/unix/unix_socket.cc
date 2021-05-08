@@ -10,6 +10,8 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <fcntl.h>
+#include "spdlog/spdlog.h"
+#include <spdlog/fmt/fmt.h>
 
 // for OSX
 #ifndef MSG_CONFIRM
@@ -17,6 +19,7 @@
 #endif
 
 using namespace std;
+using namespace spdlog;
 
 void UnixSocketAddress::address4(const void *value, size_t len, error_code &ec)
 {
@@ -169,6 +172,7 @@ ssize_t UnixSocket::recvfrom(
             error_code &ec
         )
 {
+    set_level(level::debug);
     if (buf == nullptr || addr == nullptr)
     {
         ec = make_system_error(EFAULT);
@@ -199,27 +203,6 @@ ssize_t UnixSocket::recvfrom(
         return -1;
     }
 
-    UnixSocketAddress * _addr = static_cast<UnixSocketAddress *>(addr);
-
-    if (address.sa_family == AF_INET)
-    {
-        _addr->type(SOCKET_TYPE_IP_V4);
-        _addr->address4(&address, (size_t)addrLen, ec);
-        if (ec.value())
-            return -1;
-    }
-    else if (address.sa_family == AF_INET6)
-    {
-        _addr->type(SOCKET_TYPE_IP_V6);
-        _addr->address6(&address, (size_t)addrLen, ec);
-        if (ec.value())
-            return -1;
-    }
-    else
-    {
-        ec = make_error_code(CoapStatus::COAP_ERR_SOCKET_DOMAIN);
-        return -1;
-    }
     return received;
 }
 
