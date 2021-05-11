@@ -1,6 +1,7 @@
 #ifndef _UNIX_DNS_RESOLVER
 #define _UNIX_DNS_RESOLVER
 #include "dns_resolver.h"
+#include "socket.h"
 #include <string>
 
 class UnixDnsResolver : public DnsResolver
@@ -21,7 +22,8 @@ public:
     ~UnixDnsResolver() = default;
 
 public:
-    bool hostname2address() override;
+    void hostname2address(std::error_code &ec) override;
+    SocketAddress * create_socket_address(std::error_code &ec) override;
 };
 
 #endif

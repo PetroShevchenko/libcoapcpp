@@ -19,11 +19,9 @@ TEST(testDnsResolver, resolveHostname)
 
     UnixDnsResolver resolver(testUri);
 
-    bool status;
+    resolver.hostname2address(ec);
 
-    status = resolver.hostname2address();
-
-    ASSERT_TRUE(status);
+    ASSERT_TRUE(!ec.value());
 
 #ifdef PRINT_TESTED_VALUES
     info("uri : {}", resolver.uri());
@@ -38,11 +36,9 @@ TEST(testDnsResolver, resolveIPv4)
 
     UnixDnsResolver resolver(testUriIPv4);
 
-    bool status;
+    resolver.hostname2address(ec);
 
-    status = resolver.hostname2address();
-
-    ASSERT_TRUE(status);
+    ASSERT_TRUE(!ec.value());
 
 #ifdef PRINT_TESTED_VALUES
     info("uri : {}", resolver.uri());
@@ -57,11 +53,9 @@ TEST(testDnsResolver, resolveIPv6)
 
     UnixDnsResolver resolver(testUriIPv6);
 
-    bool status;
+    resolver.hostname2address(ec);
 
-    status = resolver.hostname2address();
-
-    ASSERT_TRUE(status);
+    ASSERT_TRUE(!ec.value());
 
 #ifdef PRINT_TESTED_VALUES
     info("uri : {}", resolver.uri());

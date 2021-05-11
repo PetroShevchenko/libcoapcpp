@@ -1,5 +1,6 @@
 #include "unix_dns_resolver.h"
 #include "utils.h"
+#include "unix_socket.h"
 #include "spdlog/spdlog.h"
 #include <netdb.h>
 #include <sys/types.h>
@@ -26,7 +27,7 @@ static bool is_address6(const char * hostname)
     return (bool)inet_pton(AF_INET6, hostname, &addr);
 }
 
-bool UnixDnsResolver::hostname2address()
+void UnixDnsResolver::hostname2address(std::error_code &ec)
 {
     struct addrinfo hints;
     struct addrinfo * servinfo = nullptr;
@@ -38,8 +39,13 @@ bool UnixDnsResolver::hostname2address()
 
     set_level(level::debug);
 
+    ec.clear();
+
     if (uri().size() == 0)
-        return false;
+    {
+	ec = make_error_code(CoapStatus::COAP_ERR_EMPTY_HOSTNAME);
+        return;
+    }
 
     if (!uri2hostname(uri().c_str(), hostname, port(), true)
         && !uri2hostname(uri().c_str(), hostname, port(), false))
@@ -50,16 +56,20 @@ bool UnixDnsResolver::hostname2address()
     if (is_address6(hostname.c_str()))
     {
         address6() = hostname.c_str();
-        return true;
+        return;
     }
 
     if (is_address4(hostname.c_str()))
     {
         address4() = hostname.c_str();
-          return true;
+        return;
     }
+
     if (port() == -1)
-        return false;
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_PORT_NUMBER);
+        return;
+    }
 
     memset(address_str, 0, sizeof(address_str));
     memset(&hints, 0, sizeof(hints));
@@ -80,20 +90,62 @@ bool UnixDnsResolver::hostname2address()
                     (void *) & ((struct sockaddr_in6 *) p->ai_addr)->sin6_addr, address_str, sizeof(address_str));
             if (p->ai_family == AF_INET6) {
                 address6() = address_str;
-                status = true;
             }
             else if (p->ai_family == AF_INET) {
                 address4() = address_str;
-                status = true;
             }
         }
     }
-    else status = false;
+    else
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_RESOLVE_ADDRESS);
+    }
 
     if (servinfo != nullptr)
     {
         freeaddrinfo(servinfo);
     }
+}
 
-    return status;
+SocketAddress * UnixDnsResolver::create_socket_address(std::error_code &ec)
+{
+    struct in_addr * inp;
+    int domain = AF_INET;
+    SocketAddress *sap = nullptr;
+
+    if(m_port == -1)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_PORT_NUMBER);
+	return sap;
+    }
+
+    if (m_address6.size())
+    {
+        struct sockaddr_in6 sa;
+	sa.sin6_family = AF_INET6;
+	sa.sin6_port = htons(m_port);
+	inp = reinterpret_cast<in_addr *>(&sa.sin6_addr.s6_addr);
+	inet_aton(m_address6.c_str(), inp);
+        sap = new UnixSocketAddress(sa);
+    }
+    else if (m_address4.size())
+    {
+        struct sockaddr_in sa;
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons(m_port);
+	inp = reinterpret_cast<in_addr *>(&sa.sin_addr.s_addr);
+	inet_aton(m_address4.c_str(), inp);
+        sap = new UnixSocketAddress(sa);
+    }
+    else
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_EMPTY_ADDRESS);
+	return sap;
+    }
+
+    if (sap == nullptr)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
+    }
+    return sap;
 }

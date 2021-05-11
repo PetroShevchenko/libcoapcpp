@@ -185,8 +185,9 @@ ssize_t UnixSocket::recvfrom(
     }
 
     ssize_t received;
-    socklen_t addrLen;
     struct sockaddr address;
+    socklen_t addrLen = sizeof(address);
+    memset(&address, 0, sizeof(address));
 
     received = ::recvfrom (
                     m_descriptor,
@@ -196,6 +197,10 @@ ssize_t UnixSocket::recvfrom(
                     &address,
                     &addrLen
                 );
+    debug("sa_family :{0:d}", address.sa_family);
+    debug("AF_INET:{0:d}",AF_INET);
+    debug("AF_INET6:{0:d}",AF_INET6);
+    debug("AF_UNSPEC:{0:d}",AF_UNSPEC);
 
     if (received < 0)
     {

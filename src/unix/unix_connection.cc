@@ -91,36 +91,15 @@ Socket * UnixConnection::create_socket(std::error_code &ec)
 
 void UnixUdpClientConnection::connect(std::error_code &ec)
 {
-    if (!m_dns->hostname2address())
+    m_dns->hostname2address(ec);
+    if (ec.value())
     {
-        ec = make_error_code(CoapStatus::COAP_ERR_RESOLVE_ADDRESS);
         return;
     }
 
-    struct in_addr * inp;
-
-    if (m_dns->address6().size())
+    m_sockAddr = m_dns->create_socket_address(ec);
+    if (ec.value())
     {
-        struct sockaddr_in6 sa;
-        sa.sin6_family = AF_INET6;
-        sa.sin6_port = htons(m_dns->port());
-        inp =  (in_addr *)(&sa.sin6_addr.s6_addr);
-        inet_aton (m_dns->address6().c_str(), inp);
-        m_sockAddr = new UnixSocketAddress(sa);
-    }
-    else
-    {
-        struct sockaddr_in sa;
-        sa.sin_family = AF_INET;
-        sa.sin_port = htons(m_dns->port());
-        inp =  (in_addr *)(&sa.sin_addr.s_addr);
-        inet_aton (m_dns->address4().c_str(), inp);
-        m_sockAddr = new UnixSocketAddress(sa);
-    }
-
-    if (m_sockAddr == nullptr)
-    {
-        ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
         return;
     }
 

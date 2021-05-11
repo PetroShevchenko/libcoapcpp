@@ -1,6 +1,8 @@
 #ifndef _DNS_RESOLVER_H
 #define _DNS_RESOLVER_H
 #include <string>
+#include "socket.h"
+#include "error.h"
 
 class DnsResolver
 {
@@ -20,7 +22,8 @@ public:
     virtual ~DnsResolver() = default;
 
 public:
-    virtual bool hostname2address() = 0;
+    virtual void hostname2address(std::error_code &ec) = 0;
+    virtual SocketAddress * create_socket_address(std::error_code &ec) = 0;
 
 public:
     std::string & uri()

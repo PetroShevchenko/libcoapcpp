@@ -52,36 +52,20 @@ void TcpClient::connect(error_code &ec)
 
     UnixDnsResolver dns(m_server.c_str(), m_port);
 
-    if (!dns.hostname2address())
+    dns.hostname2address(ec);
+
+    if (ec.value())
     {
         debug("hostname2address() failed");
         return;
     }
 
-    int domain = AF_INET;
-    struct in_addr * inp;
+    m_address = dns.create_socket_address(ec);
 
-    if(dns.address6().size())
+    if (ec.value())
     {
-        struct sockaddr_in6 sa;
-        sa.sin6_family = domain = AF_INET6;
-        sa.sin6_port = htons(dns.port());
-        inp =  (in_addr *)(&sa.sin6_addr.s6_addr);
-        inet_aton (dns.address6().c_str(), inp);
-        m_address = new UnixSocketAddress(sa);
-    }
-    else if(dns.address4().size())
-    {
-        struct sockaddr_in sa;
-        sa.sin_family = domain = AF_INET;
-        sa.sin_port = htons(dns.port());
-        inp =  (in_addr *)(&sa.sin_addr.s_addr);
-        inet_aton (dns.address4().c_str(), inp);
-        m_address = new UnixSocketAddress(sa);
-    }
-    else
-    {
-        return;
+        debug("create_socket_address() failed");
+	return;
     }
 
     ec.clear();
@@ -90,6 +74,17 @@ void TcpClient::connect(error_code &ec)
     {
         delete m_socket;
         m_socket = nullptr;
+    }
+    
+    int domain = AF_INET;
+
+    if (m_address->type() == SOCKET_TYPE_IP_V6)
+    {
+        domain = AF_INET6;
+    }
+    else
+    {
+        domain = AF_INET;
     }
 
     m_socket = new UnixSocket(domain, SOCK_STREAM, 0, ec);

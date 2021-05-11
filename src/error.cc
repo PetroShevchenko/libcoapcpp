@@ -94,6 +94,12 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_NOT_CONNECTED:
             return "The connection is not established";
+
+	case CoapStatus::COAP_ERR_EMPTY_HOSTNAME:
+	    return "Hostname or URI is not presented";
+
+	case CoapStatus::COAP_ERR_EMPTY_ADDRESS:
+	    return "IPv4 or IPv6 adreess is not presented";
     }
     return "Unknown error";
 }
