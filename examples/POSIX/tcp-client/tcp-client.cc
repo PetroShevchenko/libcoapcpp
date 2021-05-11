@@ -34,7 +34,7 @@ public:
 
     void connect(error_code &ec);
     void send(const void * data, size_t size, error_code &ec);
-    void receive(void * data, size_t &size, error_code &ec);
+    void receive(error_code &ec, void * data, size_t &size, size_t seconds = 0);
     void disconnect(error_code &ec);
 
 private:
@@ -65,7 +65,7 @@ void TcpClient::connect(error_code &ec)
     if (ec.value())
     {
         debug("create_socket_address() failed");
-	return;
+        return;
     }
 
     ec.clear();
@@ -75,7 +75,7 @@ void TcpClient::connect(error_code &ec)
         delete m_socket;
         m_socket = nullptr;
     }
-    
+
     int domain = AF_INET;
 
     if (m_address->type() == SOCKET_TYPE_IP_V6)
@@ -103,9 +103,16 @@ void TcpClient::send(const void * data, size_t size, error_code &ec)
     m_socket->sendto(data, size, (const SocketAddress *) m_address, ec);
 }
 
-void TcpClient::receive(void * data, size_t &size, error_code &ec)
+void TcpClient::receive(error_code &ec, void * data, size_t &size, size_t seconds)
 {
-    ssize_t r = m_socket->recvfrom(data, size, m_address, ec);
+    if (seconds)
+    {
+        m_socket->set_timeout(seconds, ec);
+        if(ec.value())
+            return;
+    }
+
+    ssize_t r = m_socket->recvfrom(ec, data, size);
     if (!ec.value())
         size = static_cast<size_t>(r);
 }
@@ -129,7 +136,15 @@ int main(int argc, char **argv)
     if (ec.value())
         return 1;
 
-    const char * payload = "GET /wp-content/uploads/2020/01/response.txt HTTP/1.1\r\n\r\n";
+    const char * payload = "GET /wp-content/uploads/2020/01/response.txt HTTP/1.1\r\n\
+Host: cxemotexnika.org\r\n\
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0\r\n\
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n\
+Accept-Language: en-US,en;q=0.5\r\n\
+Accept-Encoding: gzip, deflate\r\n\
+Connection: keep-alive\r\n\
+Upgrade-Insecure-Requests: 1\r\n\
+Cache-Control: max-age=0\r\n\r\n";
 
     client.send(payload, strlen(payload), ec);
     debug("send() : {}", ec.message());
@@ -139,14 +154,14 @@ int main(int argc, char **argv)
     char response[4096];
     size_t sz = sizeof(response);
 
-    client.receive(response, sz, ec);
+    client.receive(ec, response, sz, 1);
     debug("receive() : {}", ec.message());
     if (ec.value())
         return 1;
 
-    debug("There was received {0:d} bytes :",sz);
+    debug("There were received {0:d} bytes :",sz);
     debug("{}", response);
-    
+
     client.disconnect(ec);
     debug("disconnect() : {}", ec.message());
 

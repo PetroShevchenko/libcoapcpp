@@ -157,24 +157,15 @@ void UnixUdpClientConnection::receive(void * buffer, size_t &length, std::error_
         ec = make_error_code(CoapStatus::COAP_ERR_NOT_CONNECTED);
         return;
     }
+
     if (seconds)
     {
-        m_socket->set_blocking(false, ec);
-        if(ec.value())
-            return;
-
         m_socket->set_timeout(seconds, ec);
         if(ec.value())
             return;
     }
-    else
-    {
-        m_socket->set_blocking(true, ec);
-        if(ec.value())
-            return;
-    }
 
-    ssize_t received = m_socket->recvfrom(buffer, length, m_sockAddr, ec);
+    ssize_t received = m_socket->recvfrom(ec, buffer, length);
     if (!ec.value())
     {
         length = static_cast<size_t>(received);

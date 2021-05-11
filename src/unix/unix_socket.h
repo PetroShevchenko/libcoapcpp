@@ -71,7 +71,7 @@ public:
     void close(std::error_code &ec) override;
     void connect(const SocketAddress * addr, std::error_code &ec) override;
     ssize_t sendto(const void * buf, std::size_t len, const SocketAddress * addr, std::error_code &ec) override;
-    ssize_t recvfrom(void * buf, std::size_t len, SocketAddress * addr, std::error_code &ec) override;
+    ssize_t recvfrom(std::error_code &ec, void * buf, std::size_t len, SocketAddress * addr = nullptr) override;
     void bind(const SocketAddress * addr, std::error_code &ec) override;
     Socket * accept(std::error_code * ec = nullptr) override;
     void listen(std::error_code &ec, int max_connections_in_queue = 1) override;

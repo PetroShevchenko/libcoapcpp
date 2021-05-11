@@ -41,7 +41,7 @@ struct Socket
     virtual void close(std::error_code &ec) = 0;
     virtual void connect(const SocketAddress * addr, std::error_code &ec) = 0;
     virtual ssize_t sendto(const void * buf, std::size_t len, const SocketAddress * addr, std::error_code &ec) = 0;
-    virtual ssize_t recvfrom(void * buf, std::size_t len, SocketAddress * addr, std::error_code &ec) = 0;
+    virtual ssize_t recvfrom(std::error_code &ec, void * buf, std::size_t len, SocketAddress * addr = nullptr) = 0;
     virtual void bind(const SocketAddress * addr, std::error_code &ec) = 0;
     virtual Socket * accept(std::error_code * ec = nullptr) = 0;
     virtual void listen(std::error_code &ec, int max_connections_in_queue = 1) = 0;

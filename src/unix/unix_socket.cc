@@ -166,14 +166,14 @@ ssize_t UnixSocket::sendto(
 }
 
 ssize_t UnixSocket::recvfrom(
+            error_code &ec,
             void * buf,
             size_t len,
-            SocketAddress * addr,
-            error_code &ec
+            SocketAddress * addr
         )
 {
     set_level(level::debug);
-    if (buf == nullptr || addr == nullptr)
+    if (buf == nullptr)
     {
         ec = make_system_error(EFAULT);
         return -1;
@@ -197,15 +197,31 @@ ssize_t UnixSocket::recvfrom(
                     &address,
                     &addrLen
                 );
-    debug("sa_family :{0:d}", address.sa_family);
-    debug("AF_INET:{0:d}",AF_INET);
-    debug("AF_INET6:{0:d}",AF_INET6);
-    debug("AF_UNSPEC:{0:d}",AF_UNSPEC);
 
     if (received < 0)
     {
         ec = make_system_error(errno);
         return -1;
+    }
+
+    if (addr != nullptr)
+    {
+        UnixSocketAddress * _addr = static_cast<UnixSocketAddress *>(addr);
+
+        if (address.sa_family == AF_INET)
+        {
+            _addr->type(SOCKET_TYPE_IP_V4);
+            _addr->address4(&address, (size_t)addrLen, ec);
+            if (ec.value())
+                return -1;
+        }
+        else if (address.sa_family == AF_INET6)
+        {
+            _addr->type(SOCKET_TYPE_IP_V6);
+            _addr->address6(&address, (size_t)addrLen, ec);
+            if (ec.value())
+                return -1;
+        }
     }
 
     return received;
