@@ -48,7 +48,6 @@ private:
 void TcpClient::connect(error_code &ec)
 {
     set_level(level::debug);
-    ec = make_error_code(CoapStatus::COAP_ERR_RESOLVE_ADDRESS);
 
     UnixDnsResolver dns(m_server.c_str(), m_port);
 
@@ -56,7 +55,7 @@ void TcpClient::connect(error_code &ec)
 
     if (ec.value())
     {
-        debug("hostname2address() failed");
+        debug("hostname2address() failed: {}",ec.message());
         return;
     }
 
@@ -64,7 +63,7 @@ void TcpClient::connect(error_code &ec)
 
     if (ec.value())
     {
-        debug("create_socket_address() failed");
+        debug("create_socket_address() failed: {}",ec.message());
         return;
     }
 
@@ -91,11 +90,16 @@ void TcpClient::connect(error_code &ec)
 
     if(ec.value())
     {
-        debug("UnixSocket() failed");
+        debug("UnixSocket() failed: {}",ec.message());
         return;
     }
 
     m_socket->connect((const SocketAddress *) m_address, ec);
+
+    if(ec.value())
+    {
+        debug("connect() failed: {}",ec.message());
+    }
 }
 
 void TcpClient::send(const void * data, size_t size, error_code &ec)

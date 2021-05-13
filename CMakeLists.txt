@@ -26,6 +26,26 @@ include_directories(${SPDLOG_PATH}/include)
 add_subdirectory(${SPDLOG_PATH})
 
 #############################################################
+# wolfssl library
+#############################################################
+
+set(WOLFSSL_PATH ${CMAKE_CURRENT_LIST_DIR}/third-party/wolfssl)
+
+include_directories(${WOLFSSL_PATH}/wolfssl)
+
+add_subdirectory(${WOLFSSL_PATH})
+
+#############################################################
+# mbed TLS library
+#############################################################
+
+set(MBEDTLS_PATH ${CMAKE_CURRENT_LIST_DIR}/third-party/mbedtls)
+
+include_directories(${MBEDTLS_PATH}/mbedtls)
+
+add_subdirectory(${MBEDTLS_PATH})
+
+#############################################################
 # coapcpp library
 #############################################################
 
