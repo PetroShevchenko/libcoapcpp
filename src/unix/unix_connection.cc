@@ -1,6 +1,4 @@
 #include "unix_connection.h"
-#include "unix_dns_resolver.h"
-#include "unix_socket.h"
 #include "utils.h"
 #include <netdb.h>
 #include <sys/types.h>
@@ -16,66 +14,28 @@
 
 using namespace spdlog;
 
-UnixConnection::UnixConnection(
-            ConnectionType type,
-            const char * hostname,
-            int port,
-            std::error_code &ec
-        )
-    : m_type{type},
-      m_dns{new UnixDnsResolver(hostname, port)},
-      m_socket{new UnixSocket()},
-      m_sockAddr{nullptr}
-{
-    if (!is_connection_type(m_type))
-    {
-        ec = make_system_error(EINVAL);
-        return;
-    }
-}
-
-UnixConnection::UnixConnection(
-            const char * uri,
-            std::error_code &ec
-        )
-    : m_type{ConnectionType::UDP},
-      m_dns{new UnixDnsResolver(uri)},
-      m_socket{new UnixSocket()},
-      m_sockAddr{nullptr}
-{
-    if (!uri2connection_type(uri, m_type))
-    {
-        ec = make_system_error(EINVAL);
-        return;
-    }
-}
-
-UnixConnection::~UnixConnection()
-{
-    if (m_socket)
-        delete m_socket;
-    if (m_dns)
-        delete m_dns;
-    if (m_sockAddr)
-        delete m_sockAddr;
-}
-
-Socket * UnixConnection::create_socket(std::error_code &ec)
+static Socket * create_socket(ConnectionType type, DnsResolver *dns, std::error_code &ec)
 {
     int domain, socktype;
 
-    if (m_dns == nullptr)
+    if (dns == nullptr)
     {
         ec = make_system_error(EFAULT);
         return nullptr;
     }
 
-    if (m_dns->address6().size())
+    if (!is_connection_type(type))
+    {
+        ec = make_system_error(EINVAL);
+        return nullptr;
+    }
+
+    if (dns->address6().size())
         domain = AF_INET6;
     else
         domain = AF_INET;
 
-    if (m_type == TCP || m_type == TLS)
+    if (type == TCP || type == TLS)
         socktype = SOCK_STREAM;
     else
         socktype = SOCK_DGRAM;
@@ -89,7 +49,7 @@ Socket * UnixConnection::create_socket(std::error_code &ec)
     return sock;
 }
 
-void UnixUdpClientConnection::connect(std::error_code &ec)
+void UnixUdpClient::connect(std::error_code &ec)
 {
     m_dns->hostname2address(ec);
     if (ec.value())
@@ -109,8 +69,7 @@ void UnixUdpClientConnection::connect(std::error_code &ec)
         m_socket = nullptr;
     }
 
-    m_socket = create_socket(ec);
-
+    m_socket = create_socket(type(), m_dns, ec);
     if (ec.value())
     {
         delete m_sockAddr;
@@ -118,9 +77,14 @@ void UnixUdpClientConnection::connect(std::error_code &ec)
     }
 }
 
-void UnixUdpClientConnection::disconnect(std::error_code &ec)
+void UnixUdpClient::disconnect(std::error_code &ec)
 {
     ec.clear();
+    if (m_dns)
+    {
+        delete m_dns;
+        m_dns = nullptr;
+    }
     if (m_socket)
     {
         delete m_socket;
@@ -133,7 +97,7 @@ void UnixUdpClientConnection::disconnect(std::error_code &ec)
     }
 }
 
-void UnixUdpClientConnection::send(const void * buffer, size_t length, std::error_code &ec)
+void UnixUdpClient::send(const void * buffer, size_t length, std::error_code &ec)
 {
     if (m_socket == nullptr)
     {
@@ -150,7 +114,7 @@ void UnixUdpClientConnection::send(const void * buffer, size_t length, std::erro
     }
 }
 
-void UnixUdpClientConnection::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
+void UnixUdpClient::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
 {
     if (m_socket == nullptr)
     {
@@ -172,27 +136,27 @@ void UnixUdpClientConnection::receive(void * buffer, size_t &length, std::error_
     }
 }
 
-void UnixDtlsClientConnection::connect(std::error_code &ec)
+void UnixDtlsClient::connect(std::error_code &ec)
 {
     //TODO
 }
 
-void UnixDtlsClientConnection::disconnect(std::error_code &ec)
+void UnixDtlsClient::disconnect(std::error_code &ec)
 {
     //TODO
 }
 
-void UnixDtlsClientConnection::send(const void * buffer, size_t length, std::error_code &ec)
+void UnixDtlsClient::send(const void * buffer, size_t length, std::error_code &ec)
 {
     //TODO
 }
 
-void UnixDtlsClientConnection::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
+void UnixDtlsClient::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
 {
     //TODO
 }
 
-Connection * create_client_connection(
+ClientConnection * create_client_connection(
             ConnectionType type,
             const char * hostname,
             int port,
@@ -202,10 +166,10 @@ Connection * create_client_connection(
     switch(type)
     {
         case UDP:
-            return new UnixUdpClientConnection(hostname, port, ec);
+            return new UnixUdpClient(hostname, port, ec);
 
         case DTLS:
-            return new UnixDtlsClientConnection(hostname, port, ec);
+            return new UnixDtlsClient(hostname, port, ec);
 
         case TCP:
         case TLS:
@@ -219,7 +183,7 @@ Connection * create_client_connection(
     return nullptr;
 }
 
-Connection * create_client_connection(
+ClientConnection * create_client_connection(
             const char * uri,
             std::error_code &ec
         )
@@ -235,10 +199,10 @@ Connection * create_client_connection(
     switch(type)
     {
         case UDP:
-            return new UnixUdpClientConnection(uri, ec);
+            return new UnixUdpClient(uri, ec);
 
         case DTLS:
-            return new UnixDtlsClientConnection(uri, ec);
+            return new UnixDtlsClient(uri, ec);
 
         case TCP:
         case TLS:

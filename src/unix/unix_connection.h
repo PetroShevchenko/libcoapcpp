@@ -1,70 +1,82 @@
 #ifndef _UNIX_CONNECTION_H
 #define _UNIX_CONNECTION_H
 #include "connection.h"
+#include "unix_dns_resolver.h"
+#include "unix_socket.h"
+#include "utils.h"
 #include "error.h"
 
-class UnixConnection : public Connection
+class UnixUdpClient : public ClientConnection
 {
 public:
-    UnixConnection(ConnectionType type, const char * hostname, int port, std::error_code &ec);
-    UnixConnection(const char * uri, std::error_code &ec);
-    virtual ~UnixConnection();
-
-public:
-    ConnectionType type() const override
-    { return m_type; }
-
-protected:
-    Socket * create_socket(std::error_code &ec);
-
-protected:
-    ConnectionType m_type;
-    DnsResolver * m_dns;
-    Socket * m_socket;
-    SocketAddress * m_sockAddr;
-};
-
-class UnixUdpClientConnection : public UnixConnection
-{
-public:
-    UnixUdpClientConnection(const char * hostname, int port, std::error_code &ec)
-    : UnixConnection(UDP,hostname, port, ec)
+    UnixUdpClient(const char * hostname, int port, std::error_code &ec)
+        : ClientConnection(UDP,hostname, port, ec),
+          m_dns{new UnixDnsResolver(hostname, port)},
+          m_socket{new UnixSocket()},
+          m_sockAddr{nullptr}
     {}
 
-    UnixUdpClientConnection(const char * uri, std::error_code &ec)
-    : UnixConnection(uri, ec)
+    UnixUdpClient(const char * uri, std::error_code &ec)
+        : ClientConnection(uri, ec),
+          m_dns{new UnixDnsResolver(uri)},
+          m_socket{new UnixSocket()},
+          m_sockAddr{nullptr}
     {}
 
-    ~UnixUdpClientConnection() = default;
+    ~UnixUdpClient()
+    {
+        std::error_code ec;
+        disconnect(ec);
+    }
 
 public:
     void connect(std::error_code &ec) override;
     void disconnect(std::error_code &ec) override;
     void send(const void * buffer, size_t length, std::error_code &ec) override;
     void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) override;
+
+private:
+    DnsResolver   *m_dns;
+    Socket        *m_socket;
+    SocketAddress *m_sockAddr;
 };
 
-class UnixDtlsClientConnection : public UnixConnection
+class UnixDtlsClient : public ClientConnection
 {
 public:
-    UnixDtlsClientConnection(const char * hostname, int port, std::error_code &ec)
-    : UnixConnection(DTLS,hostname, port, ec)
+    UnixDtlsClient(const char * hostname, int port, std::error_code &ec)
+        : ClientConnection(DTLS,hostname, port, ec),
+          m_dns{new UnixDnsResolver(hostname, port)},
+          m_socket{new UnixSocket()},
+          m_sockAddr{nullptr}
     {}
 
-    UnixDtlsClientConnection(const char * uri, std::error_code &ec)
-    : UnixConnection(uri, ec)
+    UnixDtlsClient(const char * uri, std::error_code &ec)
+        : ClientConnection(uri, ec),
+          m_dns{new UnixDnsResolver(uri)},
+          m_socket{new UnixSocket()},
+          m_sockAddr{nullptr}
     {}
 
-    ~UnixDtlsClientConnection() = default;
+    ~UnixDtlsClient()
+    {
+        std::error_code ec;
+        disconnect(ec);
+    }
 
 public:
     void connect(std::error_code &ec) override;
     void disconnect(std::error_code &ec) override;
     void send(const void * buffer, size_t length, std::error_code &ec) override;
     void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) override;
+
+private:
+    DnsResolver   *m_dns;
+    Socket        *m_socket;
+    SocketAddress *m_sockAddr;
 };
 
-Connection * create_client_connection(ConnectionType type, const char * hostname, int port, std::error_code &ec);
-Connection * create_client_connection(const char * uri, std::error_code &ec);
+ClientConnection * create_client_connection(ConnectionType type, const char * hostname, int port, std::error_code &ec);
+ClientConnection * create_client_connection(const char * uri, std::error_code &ec);
 
 #endif

@@ -21,7 +21,7 @@ TEST(testConnection, connect)
 {
     std::error_code ec;
 
-    Connection * conn = create_client_connection(testUri, ec);
+    ClientConnection * conn = create_client_connection(testUri, ec);
 
     ASSERT_TRUE(!ec.value());
 
@@ -42,7 +42,7 @@ TEST(testConnection, send)
 {
     std::error_code ec;
 
-    Connection * conn = create_client_connection(testUri, ec);
+    ClientConnection * conn = create_client_connection(testUri, ec);
 
     ASSERT_TRUE(!ec.value());
 
