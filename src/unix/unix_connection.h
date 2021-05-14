@@ -5,6 +5,9 @@
 #include "unix_socket.h"
 #include "utils.h"
 #include "error.h"
+#include <wolfssl/options.h>
+#include <wolfssl/ssl.h>
+#include <netdb.h>
 
 class UnixUdpClient : public ClientConnection
 {
@@ -27,6 +30,11 @@ public:
     {
         std::error_code ec;
         disconnect(ec);
+        if (m_dns)
+        {
+            delete m_dns;
+            m_dns = nullptr;
+        }
     }
 
 public:
@@ -48,20 +56,29 @@ public:
         : ClientConnection(DTLS,hostname, port, ec),
           m_dns{new UnixDnsResolver(hostname, port)},
           m_socket{new UnixSocket()},
-          m_sockAddr{nullptr}
+          m_sockAddr{nullptr},
+          m_ctx{nullptr},
+          m_ssl{nullptr}
     {}
 
     UnixDtlsClient(const char * uri, std::error_code &ec)
         : ClientConnection(uri, ec),
           m_dns{new UnixDnsResolver(uri)},
           m_socket{new UnixSocket()},
-          m_sockAddr{nullptr}
+          m_sockAddr{nullptr},
+          m_ctx{nullptr},
+          m_ssl{nullptr}
     {}
 
     ~UnixDtlsClient()
     {
         std::error_code ec;
         disconnect(ec);
+        if (m_dns)
+        {
+            delete m_dns;
+            m_dns = nullptr;
+        }
     }
 
 public:
@@ -74,6 +91,8 @@ private:
     DnsResolver   *m_dns;
     Socket        *m_socket;
     SocketAddress *m_sockAddr;
+    WOLFSSL_CTX   *m_ctx;
+    WOLFSSL       *m_ssl;
 };
 
 ClientConnection * create_client_connection(ConnectionType type, const char * hostname, int port, std::error_code &ec);

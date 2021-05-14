@@ -24,8 +24,7 @@ set(
 
 set(
     SRC_LIST
-       ${SRC_DIR}/tls-client1.cc
-       ${SRC_DIR}/wolfssl_error.cc
+        ${SRC_DIR}/tls-client1.cc
         ${COMMON_PATH}/http_requests.cc
         ${COMMON_PATH}/my_certificates.cc
 )

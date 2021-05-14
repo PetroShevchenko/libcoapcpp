@@ -48,6 +48,12 @@ public:
     const sockaddr_in6 & address6() const
     { return m_address6; }
 
+    sockaddr_in & address4()
+    { return m_address4; }
+
+    sockaddr_in6 & address6()
+    { return m_address6; }
+
     void address4(const void *value, size_t len, std::error_code &ec);
     void address6(const void *value, size_t len, std::error_code &ec);
 

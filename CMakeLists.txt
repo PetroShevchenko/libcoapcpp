@@ -80,6 +80,7 @@ set(
         ${SRC_DIR}/unix/unix_socket.cc
         ${SRC_DIR}/unix/unix_dns_resolver.cc
         ${SRC_DIR}/unix/unix_connection.cc
+        ${SRC_DIR}/wolfssl_error.cc
 )
 
 add_library(
@@ -92,6 +93,7 @@ target_include_directories(
         ${INC_DIR}
         ${SRC_DIR}
         ${SRC_DIR}/unix
+        ${WOLFSSL_PATH}
 )
 
 #target_compile_options(
@@ -148,6 +150,7 @@ target_include_directories(
         ${INC_DIR}
         ${SRC_DIR}
         ${SRC_DIR}/unix
+        ${WOLFSSL_PATH}
 )
 
 target_link_libraries(
@@ -155,4 +158,5 @@ target_link_libraries(
         coapcpp
         spdlog
         pthread
+        wolfssl
 )
