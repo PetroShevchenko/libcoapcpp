@@ -16,42 +16,24 @@
 #include <wolfssl/ssl.h>
 #include "wolfssl_error.h"
 
+#include "common/tcp_client.h"
+#include "common/http_requests.h"
+#include "common/my_certificates.h"
+
 #define CIPHER_LIST "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"
-
-
-const unsigned char rootCrt[] ="\r\n\
------BEGIN CERTIFICATE-----\r\n\
-MIIDSjCCAjKgAwIBAgIQRK+wgNajJ7qJMDmGLvhAazANBgkqhkiG9w0BAQUFADA/\r\n\
-MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT\r\n\
-DkRTVCBSb290IENBIFgzMB4XDTAwMDkzMDIxMTIxOVoXDTIxMDkzMDE0MDExNVow\n\
-PzEkMCIGA1UEChMbRGlnaXRhbCBTaWduYXR1cmUgVHJ1c3QgQ28uMRcwFQYDVQQD\n\
-Ew5EU1QgUm9vdCBDQSBYMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\n\
-AN+v6ZdQCINXtMxiZfaQguzH0yxrMMpb7NnDfcdAwRgUi+DoM3ZJKuM/IUmTrE4O\n\
-rz5Iy2Xu/NMhD2XSKtkyj4zl93ewEnu1lcCJo6m67XMuegwGMoOifooUMM0RoOEq\n\
-OLl5CjH9UL2AZd+3UWODyOKIYepLYYHsUmu5ouJLGiifSKOeDNoJjj4XLh7dIN9b\n\
-xiqKqy69cK3FCxolkHRyxXtqqzTWMIn/5WgTe1QLyNau7Fqckh49ZLOMxt+/yUFw\n\
-7BZy1SbsOFU5Q9D8/RhcQPGX69Wam40dutolucbY38EVAjqr2m7xPi71XAicPNaD\n\
-aeQQmxkqtilX4+U9m5/wAl0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNV\n\
-HQ8BAf8EBAMCAQYwHQYDVR0OBBYEFMSnsaR7LHH62+FLkHX/xBVghYkQMA0GCSqG\n\
-SIb3DQEBBQUAA4IBAQCjGiybFwBcqR7uKGY3Or+Dxz9LwwmglSBd49lZRNI+DT69\n\
-ikugdB/OEIKcdBodfpga3csTS7MgROSR6cz8faXbauX+5v3gTt23ADq1cEmv8uXr\n\
-AvHRAosZy5Q6XkjEGB5YGV8eAlrwDPGxrancWYaLbumR9YbK+rlmM6pZW87ipxZz\n\
-R8srzJmwN0jP41ZL9c8PDHIyh8bwRLtTcm1D9SZImlJnt1ir/md2cXjbDaJWFBM5\n\
-JDGFoqgCWjBH4d1QB7wCCZAA62RjYJsWvIjJEubSfZGL+T0yjWW06XyxV3bqxbYo\n\
-Ob8VZRzI9neWagqNdwvYkQsEjgfbKbYK7p2CNTUQ\n\
------END CERTIFICATE-----\n\
-";
-
-const size_t rootCrtSize = sizeof(rootCrt);
 
 using namespace std;
 using namespace spdlog;
 
-class TlsClient
+class TlsClient : public TcpClient
 {
 public:
     TlsClient(const char *server, int port)
-        : m_server{server}, m_port{port}, m_socket{nullptr}, m_address{nullptr}, m_ctx{nullptr}, m_ssl{nullptr}
+        : TcpClient(server, port),
+        m_socket{nullptr},
+        m_address{nullptr},
+        m_ctx{nullptr},
+        m_ssl{nullptr}
     {}
 
     ~TlsClient()
@@ -67,17 +49,15 @@ public:
     }
 
 public:
-    void connect(error_code &ec);
-    void send(const void * data, size_t size, error_code &ec);
-    void receive(error_code &ec, void * data, size_t &size);
-    void disconnect(error_code &ec);
+    void connect(error_code &ec) override;
+    void send(const void * data, size_t size, error_code &ec) override;
+    void receive(error_code &ec, void * data, size_t &size, size_t seconds = 0) override;
+    void disconnect(error_code &ec) override;
 
 private:
     void handshake(error_code &ec);
 
 private:
-    string          m_server;
-    int             m_port;
     Socket          *m_socket;
     SocketAddress   *m_address;
     WOLFSSL_CTX     *m_ctx;
@@ -115,7 +95,12 @@ void TlsClient::handshake(error_code &ec)
     }
 
     /* Load server ROOT certificate into WOLFSSL_CTX */
-    if (wolfSSL_CTX_load_verify_buffer(m_ctx, rootCrt, rootCrtSize, SSL_FILETYPE_PEM) != SSL_SUCCESS)
+    if (wolfSSL_CTX_load_verify_buffer(
+                    m_ctx,
+                    get_root_cert(),
+                    get_root_cert_size(),
+                    SSL_FILETYPE_PEM
+                ) != SSL_SUCCESS)
     {
         ec = make_error_code(wolfSSL_get_error(m_ssl, 0));
         debug("wolfSSL_CTX_load_verify_buffer() failed: {}",ec.message());
@@ -166,7 +151,7 @@ void TlsClient::connect(error_code &ec)
 {
     set_level(level::debug);
 
-    UnixDnsResolver dns(m_server.c_str(), m_port);
+    UnixDnsResolver dns(server().c_str(), port());
 
     dns.hostname2address(ec);
 
@@ -232,8 +217,9 @@ void TlsClient::send(const void * data, size_t size, error_code &ec)
     }
 }
 
-void TlsClient::receive(error_code &ec, void * data, size_t &size)
+void TlsClient::receive(error_code &ec, void * data, size_t &size, size_t seconds)
 {
+    (void)seconds;
     int status = wolfSSL_read(m_ssl, data, sizeof(data)-1);
 
     if (status == -1)
@@ -275,42 +261,9 @@ int main(int argc, char **argv)
 
     error_code ec;
 
-    client.connect(ec);
-    debug("connect() : {}", ec.message());
-    if (ec.value())
-        return 1;
+    http_get_request(&client, ec);
 
-    const char * payload = "GET /wp-content/uploads/2020/01/response.txt HTTP/1.1\r\n\
-Host: cxemotexnika.org\r\n\
-User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0\r\n\
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n\
-Accept-Language: en-US,en;q=0.5\r\n\
-Accept-Encoding: gzip, deflate\r\n\
-Connection: keep-alive\r\n\
-Upgrade-Insecure-Requests: 1\r\n\
-Cache-Control: max-age=0\r\n\r\n";
-
-    client.send(payload, strlen(payload), ec);
-    debug("send() : {}", ec.message());
-    if (ec.value())
-        return 1;
-
-    char response[4096];
-    size_t sz = sizeof(response);
-
-    client.receive(ec, response, sz);
-    debug("receive() : {}", ec.message());
-    if (ec.value())
-        return 1;
-
-    debug("There were received {0:d} bytes :",sz);
-    debug("{}", response);
-
-    client.disconnect(ec);
-    debug("disconnect() : {}", ec.message());
-
-    if (ec.value())
-        return 1;
+    debug("http_get_request() : {}",ec.message());
 
     return 0;
 }

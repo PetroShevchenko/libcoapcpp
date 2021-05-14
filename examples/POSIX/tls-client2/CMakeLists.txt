@@ -10,10 +10,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -o0 -frtti")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${ROOT_DIR}/build/lib")
 
 set(SPDLOG_PATH ${ROOT_DIR}/third-party/spdlog)
+set(MBEDTLS_PATH ${ROOT_DIR}/third-party/mbedtls)
 
 set(
     PROJECT_NAME
-        "tcp-client"
+        "tls-client2"
 )
 
 set(
@@ -23,8 +24,10 @@ set(
 
 set(
     SRC_LIST
+        ${SRC_DIR}/tls-client2.cc
+        ${SRC_DIR}/mbedtls_error.cc
         ${COMMON_PATH}/http_requests.cc
-        ${SRC_DIR}/tcp-client.cc
+        ${COMMON_PATH}/my_certificates.cc
 )
 
 add_executable(
@@ -39,6 +42,7 @@ target_include_directories(
         ${ROOT_DIR}/src/unix
         ${SRC_DIR}
         ${SPDLOG_PATH}/include
+        ${MBEDTLS_PATH}/include
         ${EXAMPLES_PATH}
 )
 
@@ -47,4 +51,7 @@ target_link_libraries(
         coapcpp
         spdlog
         pthread
+        mbedtls
+        mbedx509
+        mbedcrypto
 )

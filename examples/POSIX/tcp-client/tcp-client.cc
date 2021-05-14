@@ -6,6 +6,8 @@
 #include "unix_socket.h"
 #include "unix_dns_resolver.h"
 #include "error.h"
+#include "common/tcp_client.h"
+#include "common/http_requests.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -16,14 +18,16 @@
 using namespace std;
 using namespace spdlog;
 
-class TcpClient
+class MyTcpClient : public TcpClient
 {
 public:
-    TcpClient(const char *server, int port)
-        : m_server{server}, m_port{port}, m_socket{nullptr}, m_address{nullptr}
+     MyTcpClient(const char *server, int port)
+        : TcpClient(server, port),
+        m_socket{nullptr},
+        m_address{nullptr}
     {}
 
-    ~TcpClient()
+    ~MyTcpClient()
     {
         if (m_socket)
             delete m_socket;
@@ -32,24 +36,22 @@ public:
             delete m_address;
     }
 
-    void connect(error_code &ec);
-    void send(const void * data, size_t size, error_code &ec);
-    void receive(error_code &ec, void * data, size_t &size, size_t seconds = 0);
+    void connect(error_code &ec) override;
+    void send(const void * data, size_t size, error_code &ec) override;
+    void receive(error_code &ec, void * data, size_t &size, size_t seconds = 0) override;
     void disconnect(error_code &ec);
 
 private:
-    string          m_server;
-    int             m_port;
     Socket          *m_socket;
     SocketAddress   *m_address;
 };
 
 
-void TcpClient::connect(error_code &ec)
+void MyTcpClient::connect(error_code &ec)
 {
     set_level(level::debug);
 
-    UnixDnsResolver dns(m_server.c_str(), m_port);
+    UnixDnsResolver dns(server().c_str(), port());
 
     dns.hostname2address(ec);
 
@@ -102,12 +104,12 @@ void TcpClient::connect(error_code &ec)
     }
 }
 
-void TcpClient::send(const void * data, size_t size, error_code &ec)
+void MyTcpClient::send(const void * data, size_t size, error_code &ec)
 {
     m_socket->sendto(data, size, (const SocketAddress *) m_address, ec);
 }
 
-void TcpClient::receive(error_code &ec, void * data, size_t &size, size_t seconds)
+void MyTcpClient::receive(error_code &ec, void * data, size_t &size, size_t seconds)
 {
     if (seconds)
     {
@@ -121,56 +123,25 @@ void TcpClient::receive(error_code &ec, void * data, size_t &size, size_t second
         size = static_cast<size_t>(r);
 }
 
-void TcpClient::disconnect(error_code &ec)
+void MyTcpClient::disconnect(error_code &ec)
 {
     m_socket->close(ec);
 }
 
 int main(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
     set_level(level::debug);
     debug("tcp-client");
 
-    TcpClient client("cxemotexnika.org", 80);
+    MyTcpClient client("cxemotexnika.org", 80);
 
     error_code ec;
 
-    client.connect(ec);
-    debug("connect() : {}", ec.message());
-    if (ec.value())
-        return 1;
+    http_get_request(&client, ec);
 
-    const char * payload = "GET /wp-content/uploads/2020/01/response.txt HTTP/1.1\r\n\
-Host: cxemotexnika.org\r\n\
-User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0\r\n\
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n\
-Accept-Language: en-US,en;q=0.5\r\n\
-Accept-Encoding: gzip, deflate\r\n\
-Connection: keep-alive\r\n\
-Upgrade-Insecure-Requests: 1\r\n\
-Cache-Control: max-age=0\r\n\r\n";
-
-    client.send(payload, strlen(payload), ec);
-    debug("send() : {}", ec.message());
-    if (ec.value())
-        return 1;
-
-    char response[4096];
-    size_t sz = sizeof(response);
-
-    client.receive(ec, response, sz, 1);
-    debug("receive() : {}", ec.message());
-    if (ec.value())
-        return 1;
-
-    debug("There were received {0:d} bytes :",sz);
-    debug("{}", response);
-
-    client.disconnect(ec);
-    debug("disconnect() : {}", ec.message());
-
-    if (ec.value())
-        return 1;
+    debug("http_get_request() : {}",ec.message());
 
     return 0;
 }

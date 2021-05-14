@@ -14,7 +14,7 @@ set(WOLFSSL_PATH ${ROOT_DIR}/third-party/wolfssl)
 
 set(
     PROJECT_NAME
-        "tls-client"
+        "tls-client1"
 )
 
 set(
@@ -24,8 +24,10 @@ set(
 
 set(
     SRC_LIST
-       ${SRC_DIR}/tls-client.cc
+       ${SRC_DIR}/tls-client1.cc
        ${SRC_DIR}/wolfssl_error.cc
+        ${COMMON_PATH}/http_requests.cc
+        ${COMMON_PATH}/my_certificates.cc
 )
 
 add_executable(
@@ -41,6 +43,7 @@ target_include_directories(
         ${SRC_DIR}
         ${SPDLOG_PATH}/include
         ${WOLFSSL_PATH}
+        ${EXAMPLES_PATH}
 )
 
 target_link_libraries(
