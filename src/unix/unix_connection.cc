@@ -133,34 +133,9 @@ void UnixUdpClient::receive(void * buffer, size_t &length, std::error_code &ec, 
     }
 }
 
-void UnixDtlsClient::connect(std::error_code &ec)
+void UnixDtlsClient::handshake(std::error_code &ec)
 {
-    m_dns->hostname2address(ec);
-    if (ec.value())
-    {
-        return;
-    }
-
-    m_sockAddr = m_dns->create_socket_address(ec);
-    if (ec.value())
-    {
-        return;
-    }
-
-    if (m_socket)
-    {
-        delete m_socket;
-        m_socket = nullptr;
-    }
-
-    m_socket = create_socket(type(), m_dns, ec);
-    if (ec.value())
-    {
-        delete m_sockAddr;
-        m_sockAddr = nullptr;
-        return;
-    }
-
+    set_level(level::debug);
     /* Initialize wolfSSL */
     if (wolfSSL_Init() != WOLFSSL_SUCCESS)
     {
@@ -220,8 +195,38 @@ void UnixDtlsClient::connect(std::error_code &ec)
     {
         ec = make_error_code(wolfSSL_get_error(m_ssl, 0));
         debug("wolfSSL_set_fd() failed: {}",ec.message());
+    }
+}
+
+void UnixDtlsClient::connect(std::error_code &ec)
+{
+    m_dns->hostname2address(ec);
+    if (ec.value())
+    {
         return;
     }
+
+    m_sockAddr = m_dns->create_socket_address(ec);
+    if (ec.value())
+    {
+        return;
+    }
+
+    if (m_socket)
+    {
+        delete m_socket;
+        m_socket = nullptr;
+    }
+
+    m_socket = create_socket(type(), m_dns, ec);
+    if (ec.value())
+    {
+        delete m_sockAddr;
+        m_sockAddr = nullptr;
+        return;
+    }
+
+    handshake(ec);
 }
 
 void UnixDtlsClient::disconnect(std::error_code &ec)

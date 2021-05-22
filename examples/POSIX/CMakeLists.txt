@@ -9,4 +9,5 @@ set(COMMON_PATH ${EXAMPLES_PATH}/common)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/tcp-client)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/tls-client1)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/tls-client2)
-
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/udp-echo-server)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/udp-client)

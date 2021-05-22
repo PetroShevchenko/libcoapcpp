@@ -88,6 +88,9 @@ public:
     void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) override;
 
 private:
+    void handshake(std::error_code &ec);
+
+private:
     DnsResolver   *m_dns;
     Socket        *m_socket;
     SocketAddress *m_sockAddr;
