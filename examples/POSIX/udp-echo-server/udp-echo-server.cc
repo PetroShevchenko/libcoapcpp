@@ -24,6 +24,8 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <getopt.h>
+#include <signal.h>
 
 using namespace std;
 using namespace spdlog;
@@ -44,15 +46,13 @@ struct Incomming
     Incomming(
             const SocketAddress *clientAddress,
             const SocketAddress *serverAddress,
-            Socket *serverSocket4,
-            Socket *serverSocket6,
+            Socket *serverSocket,
             time_t lifetime
         )
         :
         m_clientAddress{clientAddress},
         m_serverAddress{serverAddress},
-        m_serverSocket4{serverSocket4},
-        m_serverSocket6{serverSocket6},
+        m_serverSocket{serverSocket},
         m_lifetime{lifetime},
         m_receiveQueue{},
         m_processing{false},
@@ -61,49 +61,77 @@ struct Incomming
 
     ~Incomming() = default;
 
+    static Payload * create_payload(const void * buffer, size_t size, error_code &ec);
+    static void delete_payload(Payload ** payload);
+
     void push_payload(const void * buffer, size_t size, error_code &ec);
     void clear_receive_queue();
 
     const SocketAddress     *m_clientAddress;
     const SocketAddress     *m_serverAddress;
-    Socket                  *m_serverSocket4;
-    Socket                  *m_serverSocket6;
+    Socket                  *m_serverSocket;
     atomic<time_t>          m_lifetime;
     SafeQueue<Payload *>    m_receiveQueue;
     atomic<bool>            m_processing;
     thread::id              m_threadId;
 };
 
-// WARNING: This function allocates the memory that should be free
-void Incomming::push_payload(const void * buffer, size_t size, error_code &ec)
+// WARNING: This function allocates the memory that should be freed
+Payload * Incomming::create_payload(const void * buffer, size_t size, error_code &ec)
 {
     Payload *payload = new Payload();
     if (payload == nullptr)
     {
         ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
-        return;
+        return nullptr;
     }
-
     payload->size = size;
-    payload->data = new char [payload->size];
-
-    if (payload->data == nullptr)
+    if (size && buffer)
     {
-        delete [] payload;
-        ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
-        return;
+        payload->data = new char [size];
+        if (payload->data == nullptr)
+        {
+            delete payload;
+            ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
+            return nullptr;
+        }
+        // copy data to the payload
+        memcpy(payload->data, buffer, payload->size);
     }
-    // copy received data to the payload
-    memcpy(payload->data, buffer, payload->size);
+    else
+    {
+        payload->size = 0;
+        payload->data = nullptr;
+    }
+    return payload;
+}
+
+void Incomming::delete_payload(Payload ** payload)
+{
+    if (payload == nullptr)
+        return;
+    if (*payload == nullptr)
+        return;
+    if ((*payload)->data)
+    {
+        delete [] static_cast<char *>((*payload)->data);
+        (*payload)->data = nullptr;
+    }
+    delete *payload;
+    *payload = nullptr;
+}
+
+void Incomming::push_payload(const void * buffer, size_t size, error_code &ec)
+{
+    Payload * payload = create_payload(buffer, size, ec);
+    if (ec.value())
+    { return; }
 
     // send received data to the queue
     m_receiveQueue.push(payload, ec);
 
     if (ec.value())
-    {
-        delete [] (char *)payload->data;
-        delete payload;
-    }
+    { delete_payload(&payload); }
 }
 
 void Incomming::clear_receive_queue()
@@ -113,21 +141,8 @@ void Incomming::clear_receive_queue()
     {
         payload = m_receiveQueue.pop();
         if (payload)
-        {
-            if (payload->data)
-                delete [] payload->data;
-            delete payload;
-        }
+        { delete_payload(&payload); }
     }
-}
-
-void clear_payload(Payload * payload)
-{
-    if (payload == nullptr)
-        return;
-    if (payload->data)
-        delete [] payload->data;
-    delete payload;
 }
 
 typedef void (*ReceivedPacketHandlerCallback)(Incomming *incomming, error_code &ec);
@@ -135,7 +150,7 @@ typedef void (*ReceivedPacketHandlerCallback)(Incomming *incomming, error_code &
 class UdpServer
 {
 public:
-    UdpServer(int port, error_code &ec);
+    UdpServer(int port, error_code &ec, bool version4 = false);
 
     virtual ~UdpServer();
 
@@ -183,10 +198,10 @@ public:
     { m_callback = callback; }
 
 protected:
-    int m_port;
+    int                         m_port;
+    const bool                  m_version4;
     SocketAddress               *m_serverAddress;
-    Socket                      *m_serverSocket4;
-    Socket                      *m_serverSocket6;
+    Socket                      *m_serverSocket;
     vector<Incomming*>          m_connections;
     vector<thread>              m_threads;
     atomic<bool>                m_running;
@@ -196,52 +211,18 @@ private:
     ReceivedPacketHandlerCallback m_callback;
 };
 
-UdpServer::UdpServer(int port, error_code &ec)
+UdpServer::UdpServer(int port, error_code &ec, bool version4)
     : m_port{port},
+    m_version4{version4},
     m_serverAddress{new UnixSocketAddress()},
-    m_serverSocket4{nullptr},
-    m_serverSocket6{nullptr},
+    m_serverSocket{nullptr},
     m_connections{},
     m_running{false},
     m_mutex{}
 {
     set_level(level::debug);
 
-#if 0
-    // prepare to listening of IPv4
-    m_serverSocket4 = new UnixSocket(AF_INET, SOCK_DGRAM, 0, ec);
-    if (ec.value())
-    {
-        debug("UnixSocket error: {}", ec.message());
-        return;
-    }
-
-    UnixSocketAddress *sa = reinterpret_cast<UnixSocketAddress *>(m_serverAddress);
-    sa->address4().sin_family = AF_INET;
-    sa->address4().sin_addr.s_addr = INADDR_ANY;
-    sa->address4().sin_port = htons(port);
-
-    const int on = 1; // reuse address option
-
-    m_serverSocket4->setsockoption(SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int), ec);
-    if (ec.value())
-    {
-        debug("setsockoption error: {}", ec.message());
-        return;
-    }
-
-    m_serverSocket4->bind(static_cast<const SocketAddress *>(m_serverAddress), ec);
-    if (ec.value())
-    {
-        debug("bind error: {}", ec.message());
-        return;
-    }
-#endif
-    const int on = 1; // reuse address option
-    const int off = 0; // disable IPv6 only
-
-    // prepare to listening of IPv6
-    m_serverSocket6 = new UnixSocket(AF_INET6, SOCK_DGRAM, 0, ec);
+    m_serverSocket = new UnixSocket(m_version4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0, ec);
     if (ec.value())
     {
         debug("UnixSocket error: {}", ec.message());
@@ -250,27 +231,43 @@ UdpServer::UdpServer(int port, error_code &ec)
 
     UnixSocketAddress *sa = reinterpret_cast<UnixSocketAddress *>(m_serverAddress);
 
-    sa->address6().sin6_family = AF_INET6;
-    sa->address6().sin6_addr = in6addr_any;
-    sa->address6().sin6_scope_id = 0;
-    //memcpy(sa->address6().sin6_addr.s6_addr, in6addr_any.s6_addr, sizeof(in6addr_any.s6_addr));
-    sa->address6().sin6_port = htons(port);
+    if (m_version4)
+    {
+        sa->type(SOCKET_TYPE_IP_V4);
+        sa->address4().sin_family = AF_INET;
+        sa->address4().sin_addr.s_addr = INADDR_ANY;
+        sa->address4().sin_port = htons(port);
+    }
+    else
+    {
+        sa->type(SOCKET_TYPE_IP_V6);
+        sa->address6().sin6_family = AF_INET6;
+        sa->address6().sin6_addr = in6addr_any;
+        sa->address6().sin6_scope_id = 0;
+        sa->address6().sin6_port = htons(port);
+    }
 
-    m_serverSocket6->setsockoption(SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int), ec);
+    const int on = 1; // reuse address option
+
+    m_serverSocket->setsockoption(SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int), ec);
     if (ec.value())
     {
         debug("setsockoption error: {}", ec.message());
         return;
     }
 
-    m_serverSocket6->setsockoption(IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof(int), ec);
-    if (ec.value())
+    if (!m_version4)
     {
-        debug("setsockoption error: {}", ec.message());
-        return;
+        const int off = 0; // disable IPv6 only
+        m_serverSocket->setsockoption(IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof(int), ec);
+        if (ec.value())
+        {
+            debug("setsockoption error: {}", ec.message());
+            return;
+        }
     }
 
-    m_serverSocket6->bind(static_cast<const SocketAddress *>(m_serverAddress), ec);
+    m_serverSocket->bind(static_cast<const SocketAddress *>(m_serverAddress), ec);
     if (ec.value())
     {
         debug("bind error: {}", ec.message());
@@ -286,13 +283,9 @@ UdpServer::~UdpServer()
     {
         delete m_serverAddress;
     }
-    if (m_serverSocket4)
+    if (m_serverSocket)
     {
-        delete m_serverSocket4;
-    }
-    if (m_serverSocket6)
-    {
-        delete m_serverSocket6;
+        delete m_serverSocket;
     }
 }
 
@@ -306,8 +299,7 @@ Incomming* UdpServer::new_incomming(const UnixSocketAddress &addr, error_code &e
     Incomming *connection = new Incomming(
                                     &addr,
                                     m_serverAddress,
-                                    m_serverSocket4,
-                                    m_serverSocket6,
+                                    m_serverSocket,
                                     futuretime
                                 );
     if (connection == nullptr)
@@ -324,16 +316,38 @@ Incomming* UdpServer::new_incomming(const UnixSocketAddress &addr, error_code &e
 bool UdpServer::remove_connection(Incomming * connection)
 {
     if (connection == nullptr) { return false; }
-    //lock_guard<std::mutex> lg(m_mutex);
+
     for(vector<thread>::iterator
         iter = m_threads.begin(), last = m_threads.end(); iter != last; ++iter)
     {
         if (iter->get_id() == connection->m_threadId)
         {
-            connection->m_processing = false;
-            iter->join();
-            m_threads.erase(iter);
-            connection->clear_receive_queue();
+            connection->m_processing = false; // flag to stop connection processing
+            // kick the message queue with an empty message
+            {
+                error_code ec;
+                connection->push_payload(nullptr, 0, ec);
+                if (ec.value())
+                {
+                    debug("ec.message():{}",ec.message());
+                    return false;
+                }
+            }
+            // give a chance to switch the context
+            std::this_thread::sleep_for (std::chrono::milliseconds(100));
+
+            iter->join();                       // join the connection handle thread
+            m_threads.erase(iter);              // remove the thread from the thread pool
+            connection->clear_receive_queue();  // remove all messages from the queue
+
+            for (vector<Incomming *>::iterator
+                iter2 = m_connections.begin(), last2 = m_connections.end(); iter2 != last2; ++iter2)
+            {
+                if (*iter2 == connection)
+                { m_connections.erase(iter2); break; } // remove the connection from the connection pool
+            }
+
+            delete connection;
             return true;
         }
     }
@@ -344,7 +358,7 @@ static bool is_connection_timed_out(const Incomming * connection)
 {
     if (connection == nullptr) { return false; }
     time_t currentTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    return (connection->m_lifetime >= currentTime);
+    return (currentTime >= connection->m_lifetime);
 }
 
 static void update_lifetime(Incomming * connection)
@@ -364,18 +378,12 @@ Incomming* UdpServer::find_connection(const UnixSocketAddress &addr)
     for(auto connection : m_connections)
     {
         const UnixSocketAddress * ca = reinterpret_cast<const UnixSocketAddress *>(connection->m_clientAddress);
-        debug("ca->type() = {0:d}", ca->type());
 
         if ( (ca->type() == SOCKET_TYPE_IP_V4
             && (ca->address4().sin_addr.s_addr == addr.address4().sin_addr.s_addr) )
             || (ca->type() != SOCKET_TYPE_IP_V4
             && (ca->address6().sin6_addr.s6_addr == addr.address6().sin6_addr.s6_addr) ) )
         {
-            debug("ca->address4().sin_addr.s_addr = {0:d}", ca->address4().sin_addr.s_addr);
-            debug("addr.address4().sin_addr.s_addr = {0:d}", addr.address4().sin_addr.s_addr);
-            debug("ca->address6().sin6_addr.s6_addr = {}", ca->address6().sin6_addr.s6_addr);
-            debug("addr.address6().sin6_addr.s6_addr = {}", addr.address6().sin6_addr.s6_addr);
-
             // if the connection is timed out remove it
             if (is_connection_timed_out(connection))
             {
@@ -412,20 +420,27 @@ void UdpServer::accept(
 
     if (connection == nullptr) // it is a new client
     {
-        connection = new_incomming(address, ec);
-        if (ec.value())
+        if (m_connections.size() >= CLIENT_MAX_CONNECTIONS)
         {
-            debug("new_incomming() : error : {}", ec.message());
+            ec = make_error_code(CoapStatus::COAP_ERR_CONNECTIONS_EXCEEDED);
+            debug("accept() error: {}", ec.message());
             return;
         }
 
-        m_connections.push_back(connection);
+        connection = new_incomming(address, ec);
+        if (ec.value())
+        {
+            debug("new_incomming() error: {}", ec.message());
+            return;
+        }
 
-        thread newThread(processing_thread, connection, this);
+        m_connections.push_back(connection); // add a new connection to the connection pool
 
-        connection->m_threadId = newThread.get_id();
+        thread newThread(processing_thread, connection, this); // create a new thread to process the connection
 
-        m_threads.push_back(move(newThread));
+        connection->m_threadId = newThread.get_id(); // map the connection and the thread
+
+        m_threads.push_back(move(newThread)); // add a new thread to the thread pool
     }
 
     connection->push_payload(buffer, static_cast<size_t>(received), ec);
@@ -483,16 +498,16 @@ void UdpServer::listening(error_code &ec)
         return;
     }
 
+    static size_t iteration = 0;
+
     while (m_running)
     {
-        debug("listening iteration");
+        debug("listening iteration {0:d}", ++iteration);
 
-        //UnixSocket * sock4 = reinterpret_cast<UnixSocket *>(m_serverSocket4);
-        UnixSocket * sock6 = reinterpret_cast<UnixSocket *>(m_serverSocket6);
+        UnixSocket * sock = reinterpret_cast<UnixSocket *>(m_serverSocket);
 
         FD_ZERO (&readDescriptors);
-        //FD_SET (sock4->descriptor(), &readDescriptors);
-        FD_SET (sock6->descriptor(), &readDescriptors);
+        FD_SET (sock->descriptor(), &readDescriptors);
 
         tv.tv_sec = DEFAULT_LIFETIME_IN_SECONDS;
         tv.tv_usec = 0;
@@ -501,7 +516,7 @@ void UdpServer::listening(error_code &ec)
 
         if (status == 0)
         {
-            debug("select() : receive timeout {0:d} seconds is over", tv.tv_sec);
+            debug("select() : receive timeout {0:d} seconds is over", DEFAULT_LIFETIME_IN_SECONDS);
             continue;
         }
 
@@ -513,24 +528,14 @@ void UdpServer::listening(error_code &ec)
 
         ssize_t received = -1;
         UnixSocketAddress clientAddress;
-#if 0
-        // if there was received something on IPv4 socket
-        if (FD_ISSET(sock4->descriptor(), &readDescriptors))
+
+        // if there was received something on socket
+        if (FD_ISSET(sock->descriptor(), &readDescriptors))
         {
-            connect(sock4, buffer, PAYLOAD_MAX_SIZE, received, clientAddress, ec);
+            connect(sock, buffer, PAYLOAD_MAX_SIZE, received, clientAddress, ec);
             if (ec.value())
             {
-                debug("IPv4 connect() error : {}", ec.message());
-            }
-        }
-#endif
-        // if there was received something on IPv6 socket
-        if (FD_ISSET(sock6->descriptor(), &readDescriptors))
-        {
-            connect(sock6, buffer, PAYLOAD_MAX_SIZE, received, clientAddress, ec);
-            if (ec.value())
-            {
-                debug("IPv6 connect() error : {}", ec.message());
+                debug("connect() error : {}", ec.message());
             }
         }
     } // while
@@ -554,6 +559,16 @@ void UdpServer::processing(Incomming* incomming)
     while (incomming->m_processing)
     {
         incomming->m_receiveQueue.wait_wail_empty();
+
+        Payload * payload = incomming->m_receiveQueue.front();
+
+        if (incomming->m_processing == false        // processing is finished
+            || (payload && (payload->size == 0))    // or it is a signalling message to stop processing
+            || is_connection_timed_out(incomming))  // or connection is timed out
+        {
+            incomming->m_processing = false;
+            continue;
+        }
 
         update_lifetime(incomming);
 
@@ -583,18 +598,11 @@ void UdpServer::shutdown(error_code &ec)
         }
     }
 
-    if (m_serverSocket4)
+    if (m_serverSocket)
     {
-        m_serverSocket4->close(ec);
+        m_serverSocket->close(ec);
         if (ec.value())
-            debug("Unable to close IPv4 socket {0:d}", reinterpret_cast<const UnixSocket *>(m_serverSocket4)->descriptor());
-    }
-
-    if (m_serverSocket6)
-    {
-        m_serverSocket6->close(ec);
-        if (ec.value())
-            debug("Unable to close IPv6 socket {0:d}", reinterpret_cast<const UnixSocket *>(m_serverSocket6)->descriptor());
+            debug("Unable to close socket {0:d}", reinterpret_cast<const UnixSocket *>(m_serverSocket)->descriptor());
     }
 }
 
@@ -608,60 +616,136 @@ static void udp_echo_server_packet_handler(Incomming* incomming, error_code &ec)
         return;
     }
 
-    if (incomming->m_clientAddress->type() == SOCKET_TYPE_IP_V4)
-    {
-        incomming->m_serverSocket4->sendto(
-                                    payload->data,
-                                    payload->size,
-                                    incomming->m_clientAddress,
-                                    ec
-                                );
+    incomming->m_serverSocket->sendto(
+                                payload->data,
+                                payload->size,
+                                incomming->m_clientAddress,
+                                ec
+                            );
+    incomming->delete_payload(&payload);
+}
+
+static void usage()
+{
+    std::cerr << "Usage: udp-echo-client [OPTIONS]" << std::endl;
+    std::cerr << "Launch a UDP echo server" << std::endl;
+    std::cerr << "Options:" << std::endl;
+    std::cerr << "-h,--help\tshow this message and exit" << std::endl;
+    std::cerr << "-p,--port\t<PORT_NUMBER>\tset the port number of the server. Default: 5683" << std::endl;
+    std::cerr << "-4,--ipv4\tListen to only IPv4 addresses" << std::endl;
+    std::cerr << "-6,--ipv6\tListen to only IPv6 addresses. Default" << std::endl;
+}
+
+struct CommandLineOptions
+{
+    bool useIPv4;
+    int port;
+};
+
+static bool parse_arguments(int argc, char ** argv, CommandLineOptions &options)
+{
+    int opt;
+    char * endptr;
+    if (argc == 1) {
+        usage();
+        return false;
     }
-    else
+    options.port = 5683;
+    options.useIPv4 = false;
+    set_level(level::debug);
+    while(true)
     {
-        debug("IPv6 address : {}");
-        fmt::print("{:02x}", fmt::join(reinterpret_cast<const UnixSocketAddress *>(incomming->m_clientAddress)->address6().sin6_addr.s6_addr, ", "));
-        fmt::print("\n");
-        debug("IPv6 port : {0:d}", reinterpret_cast<const UnixSocketAddress *>(incomming->m_clientAddress)->address6().sin6_port);
-        incomming->m_serverSocket6->sendto(
-                                    payload->data,
-                                    payload->size,
-                                    incomming->m_clientAddress,
-                                    ec
-                                );
+        int option_index = 0;// getopt_long stores the option index here
+        static struct option long_options[] = {
+                {"help", no_argument, 0, 'h'},
+                {"port", required_argument, 0, 'p'},
+                {"ipv4", no_argument, 0, '4'},
+                {"ipv6", no_argument, 0, '6'},
+                {0, 0, 0, 0}
+        };
+        opt = getopt_long (argc, argv, "hp:46", long_options, &option_index);
+        if (opt == -1) break;
+        switch (opt)
+        {
+            case '?':
+            case 'h':
+                usage();
+                return false;
+            case 'p':
+                options.port = (int)strtol(optarg, &endptr, 10);
+                if (options.port <= 0) {
+                    debug("Error: Unable to convert --port {} option value to port number", optarg);
+                    return false;
+                }
+                break;
+            case '4':
+                options.useIPv4 = true;
+                break;
+            case '6':
+                options.useIPv4 = false;
+                break;
+            default:
+                return false;
+        }
     }
-    clear_payload(payload);
+    return true;
+}
+
+static UdpServer * server;
+
+static void signal_handler(int signo)
+{
+    if (signo == SIGINT)
+    {
+        if (server)
+        { server->stop(); debug("server stopped");}
+    }
 }
 
 int main(int argc, char **argv)
 {
-    (void)argc;
-    (void)argv;
     set_level(level::debug);
     debug("udp-echo-server");
 
+    CommandLineOptions options;
+    if (!parse_arguments(argc, argv, options))
+    {
+        debug("parse_arguments() error");
+        return 1;
+    }
+    debug("port: {0:d}", options.port);
+    debug("use IPv4: {}", options.useIPv4);
+
     error_code ec;
 
-    UdpServer server(5683, ec);
+    server = new UdpServer(options.port, ec, options.useIPv4);
     if (ec.value())
     {
         debug("UdpServer constructor error: {}", ec.message());
         return 1;
     }
 
-    server.set_received_packed_handler_callback(udp_echo_server_packet_handler);
+    if (signal(SIGINT, signal_handler) == SIG_ERR)
+    {
+        debug("Unable to set SIGINT handler");
+        return 1;
+    }
 
-    server.listening(ec);
+    server->set_received_packed_handler_callback(udp_echo_server_packet_handler);
+
+    server->listening(ec);
     if (ec.value())
     {
         debug("listening error: {}", ec.message());
     }
 
-    server.shutdown(ec);
+    server->shutdown(ec);
     if (ec.value())
     {
         debug("shutdown error: {}", ec.message());
     }
+
+    delete server;
 
     return 0;
 }

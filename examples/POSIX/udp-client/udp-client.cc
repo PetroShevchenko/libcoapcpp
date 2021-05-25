@@ -62,7 +62,8 @@ int main(int argc, char **argv)
     }
     debug("OK");
 
-    debug("There was received a message from the server: {}", receiveBuffer);
+    receiveBuffer[len] = '\0';
+    debug("Received: {}", receiveBuffer);
 
     delete client;
 

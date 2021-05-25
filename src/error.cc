@@ -106,6 +106,9 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_NO_PAYLOAD:
             return "There is no payload to handle";
+
+        case CoapStatus::COAP_ERR_CONNECTIONS_EXCEEDED:
+            return "The maximum number of connections has been exceeded";
     }
     return "Unknown error";
 }
