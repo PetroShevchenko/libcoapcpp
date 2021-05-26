@@ -34,7 +34,6 @@ void UnixDnsResolver::hostname2address(std::error_code &ec)
     char port_str[8];
     char address_str[40];
     int result;
-    bool status = false;
     std::string hostname;
 
     set_level(level::debug);
@@ -110,7 +109,6 @@ void UnixDnsResolver::hostname2address(std::error_code &ec)
 SocketAddress * UnixDnsResolver::create_socket_address(std::error_code &ec)
 {
     struct in_addr * inp;
-    int domain = AF_INET;
     SocketAddress *sap = nullptr;
 
     if(m_port == -1)

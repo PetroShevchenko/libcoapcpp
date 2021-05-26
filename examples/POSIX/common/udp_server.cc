@@ -155,6 +155,10 @@ UdpServer::UdpServer(int port, error_code &ec, bool version4)
         debug("bind error: {}", ec.message());
         return;
     }
+    // start remover thread
+    thread newThread(expired_connections_remover_thread, this);
+    m_removerThread = move(newThread);
+
 }
 
 UdpServer::~UdpServer()
@@ -166,6 +170,10 @@ UdpServer::~UdpServer()
     if (m_serverSocket)
     {
         delete m_serverSocket;
+    }
+    if (m_removerThread.joinable())
+    {
+        m_removerThread.join();
     }
 }
 
@@ -222,7 +230,8 @@ bool UdpServer::remove_connection(Incomming * connection)
             // give a chance to switch the context
             std::this_thread::sleep_for (std::chrono::milliseconds(100));
 
-            iter->join();                       // join the connection handle thread
+            if (iter->joinable())
+                iter->join();                       // join the connection handle thread
             m_threads.erase(iter);              // remove the thread from the thread pool
             connection->clear_receive_queue();  // remove all messages from the queue
 
@@ -495,6 +504,27 @@ void UdpServer::shutdown(error_code &ec)
         if (ec.value())
             debug("Unable to close socket {0:d}", reinterpret_cast<const UnixSocket *>(m_serverSocket)->descriptor());
     }
+}
+
+void UdpServer::expired_connections_remover()
+{
+    while(m_running)
+    {
+        for(vector<Incomming *>::iterator iter = m_connections.begin(),
+                last = m_connections.end(); iter != last; ++iter)
+        {
+            if (is_connection_timed_out(static_cast<const Incomming *>(*iter)))
+            {
+                remove_connection(*iter);
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+void UdpServer::expired_connections_remover_thread(void *context)
+{
+    ((UdpServer *)context)->expired_connections_remover();
 }
 
 namespace udpserver

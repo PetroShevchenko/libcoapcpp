@@ -88,16 +88,20 @@ public:
 
     virtual void shutdown(std::error_code &ec);
 
+    virtual void expired_connections_remover();
+
     static void processing_thread(Incomming* incomming, void *context);
+
+    static void expired_connections_remover_thread(void *context);
 
 public:
     void stop()
-    { m_running = false;}
+    { m_running = false; }
 
     void start()
     { m_running = true; }
 
-    bool id_started() const
+    bool is_started() const
     { return m_running;}
 
     void set_received_packed_handler_callback(ReceivedPacketHandlerCallback callback)
@@ -110,6 +114,7 @@ protected:
     Socket                      *m_serverSocket;
     std::vector<Incomming*>     m_connections;
     std::vector<std::thread>    m_threads;
+    std::thread                 m_removerThread;
     std::atomic<bool>           m_running;
     std::mutex                  m_mutex;
 
