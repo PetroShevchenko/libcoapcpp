@@ -35,6 +35,7 @@ enum class CoapStatus
     COAP_ERR_REMOVE_CONNECTION,
     COAP_ERR_NO_PAYLOAD,
     COAP_ERR_CONNECTIONS_EXCEEDED,
+    COAP_ERR_DTLS_CTX_INIT,
 };
 
 namespace std

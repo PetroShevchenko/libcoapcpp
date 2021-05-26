@@ -14,7 +14,7 @@ set(WOLFSSL_PATH ${ROOT_DIR}/third-party/wolfssl)
 
 set(
     PROJECT_NAME
-        "udp-client"
+        "dtls-echo-server"
 )
 
 set(
@@ -24,7 +24,8 @@ set(
 
 set(
     SRC_LIST
-        ${SRC_DIR}/udp-client.cc
+        ${COMMON_PATH}/dtls_server.cc
+        ${SRC_DIR}/dtls-echo-server.cc
 )
 
 add_executable(
@@ -39,8 +40,8 @@ target_include_directories(
         ${ROOT_DIR}/src/unix
         ${SRC_DIR}
         ${SPDLOG_PATH}/include
-        ${WOLFSSL_PATH}
         ${EXAMPLES_PATH}
+        ${WOLFSSL_PATH}
 )
 
 target_link_libraries(

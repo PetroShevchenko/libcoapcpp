@@ -109,6 +109,9 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_CONNECTIONS_EXCEEDED:
             return "The maximum number of connections has been exceeded";
+
+        case CoapStatus::COAP_ERR_DTLS_CTX_INIT:
+            return "Failed to initialize DTLS context";
     }
     return "Unknown error";
 }
