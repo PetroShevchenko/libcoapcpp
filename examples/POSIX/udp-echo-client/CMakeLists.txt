@@ -10,11 +10,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -o0 -frtti")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${ROOT_DIR}/build/lib")
 
 set(SPDLOG_PATH ${ROOT_DIR}/third-party/spdlog)
-set(WOLFSSL_PATH ${ROOT_DIR}/third-party/wolfssl)
 
 set(
     PROJECT_NAME
-        "udp-client"
+        "udp-echo-client"
 )
 
 set(
@@ -24,7 +23,9 @@ set(
 
 set(
     SRC_LIST
-        ${SRC_DIR}/udp-client.cc
+        ${COMMON_PATH}/connection.cc
+        ${COMMON_PATH}/udp_client.cc
+        ${SRC_DIR}/udp-echo-client.cc
 )
 
 add_executable(
@@ -39,7 +40,6 @@ target_include_directories(
         ${ROOT_DIR}/src/unix
         ${SRC_DIR}
         ${SPDLOG_PATH}/include
-        ${WOLFSSL_PATH}
         ${EXAMPLES_PATH}
 )
 
@@ -48,5 +48,4 @@ target_link_libraries(
         coapcpp
         spdlog
         pthread
-        wolfssl
 )

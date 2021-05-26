@@ -24,6 +24,7 @@ set(
 
 set(
     SRC_LIST
+        ${COMMON_PATH}/wolfssl_error.cc
         ${COMMON_PATH}/dtls_server.cc
         ${SRC_DIR}/dtls-echo-server.cc
 )

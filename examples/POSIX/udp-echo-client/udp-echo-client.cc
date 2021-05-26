@@ -4,7 +4,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 #include "error.h"
-#include "unix_connection.h"
+#include "common/udp_client.h"
 
 using namespace std;
 using namespace spdlog;
@@ -17,15 +17,15 @@ int main(int argc, char **argv)
     set_level(level::debug);
 
     ClientConnection *
-    client = create_client_connection(
-                            UDP,
-                            "localhost",
-                            5683,
-                            ec
-                        );
+    client = new UdpClient("localhost", 5683, ec);
+    if (client == nullptr)
+    {
+        debug("UdpClient(): memory allocation error");
+        return 1;
+    }
     if (ec.value())
     {
-        debug("create_client_connection() error: {}", ec.message());
+        debug("UdpClient() error: {}", ec.message());
         return 1;
     }
 
