@@ -1,3 +1,4 @@
+#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 #include "unix_socket.h"
 #include <netdb.h>
 #include <sys/types.h>
@@ -392,3 +393,4 @@ void UnixSocket::getsockoption(
         ec = make_system_error(errno);
     }
 }
+#endif

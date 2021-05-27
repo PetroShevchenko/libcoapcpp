@@ -2,7 +2,8 @@
 
 TARGET=POSIX
 #TARGET=ESP32
-#TARGET=STM32H747I-DISCO
+#TARGET=DISCO_H747I
+#TARGET=DISCO_F746NG
 
 BUILD_TYPE=NATIVE
 #BUILD_TYPE=DOCKER
@@ -39,12 +40,14 @@ if [ "$TARGET" = "POSIX" ];then
         echo "Error : BUILD_TYPE isn't specified"
     fi
 
-elif [ "$TARGET" = "STM32H747I-DISCO" ];then
-    echo "Warning: The STM32H747I-DISCO target hasn't been implemented yet."
-    echo "Please, set TARGET=POSIX"
+elif [ "$TARGET" = "DISCO_H747I" ];then
+    echo "To build libcoapcpp for DISCO_H747I please use build.sh from examples/STM32"
+
+elif [ "$TARGET" = "DISCO_F746NG" ];then
+    echo "To build libcoapcpp for DISCO_F746NG please use build.sh from examples/STM32"
 
 elif [ "$TARGET" = "ESP32" ];then
-    echo "To build libcoapcpp under ESP32 plaese use build.sh from examples/ESP32"
+    echo "To build libcoapcpp for ESP32 please use build.sh from examples/ESP32"
 
 else
     echo "Error: TARGET isn't specified"

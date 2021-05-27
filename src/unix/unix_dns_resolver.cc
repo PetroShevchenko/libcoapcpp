@@ -1,3 +1,4 @@
+#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 #include "unix_dns_resolver.h"
 #include "utils.h"
 #include "unix_socket.h"
@@ -147,3 +148,4 @@ SocketAddress * UnixDnsResolver::create_socket_address(std::error_code &ec)
     }
     return sap;
 }
+#endif
