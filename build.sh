@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TARGET=POSIX
+#TARGET=ESP32
 #TARGET=STM32H747I-DISCO
 
 BUILD_TYPE=NATIVE
@@ -41,6 +42,9 @@ if [ "$TARGET" = "POSIX" ];then
 elif [ "$TARGET" = "STM32H747I-DISCO" ];then
     echo "Warning: The STM32H747I-DISCO target hasn't been implemented yet."
     echo "Please, set TARGET=POSIX"
+
+elif [ "$TARGET" = "ESP32" ];then
+    echo "To build libcoapcpp under ESP32 plaese use build.sh from examples/ESP32"
 
 else
     echo "Error: TARGET isn't specified"

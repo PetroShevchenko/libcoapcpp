@@ -1,12 +1,12 @@
 #include "packet.h"
-#include "spdlog/spdlog.h"
+//#include "spdlog/spdlog.h"
 #include <cstdlib>
 #include <climits>
 #include <cassert>
 #include <cstring>
 
 using namespace std;
-using namespace spdlog;
+//using namespace spdlog;
 
 namespace coap
 {
@@ -409,7 +409,7 @@ void Packet::serialize(
 
     ec.clear();
 
-    set_level(level::debug);
+    //set_level(level::debug);
 
     if (!checkBufferSizeOnly)
     {

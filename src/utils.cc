@@ -2,9 +2,6 @@
 #include <cstring>
 #include <string>
 #include <cstdlib>
-#include "spdlog/spdlog.h"
-
-using namespace spdlog;
 
 bool uri2connection_type(const char * uri, ConnectionType &type)
 {
@@ -37,7 +34,6 @@ bool uri2connection_type(const char * uri, ConnectionType &type)
 
 bool uri2hostname(const char * uri, std::string &hostname, int &port, bool uri4)
 {
-    set_level(level::debug);
     if (uri == NULL)
         return false;
 

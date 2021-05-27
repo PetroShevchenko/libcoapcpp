@@ -1,12 +1,12 @@
 #include <cmath>
 #include <cassert>
 #include <cstdint>
-#include "spdlog/spdlog.h"
+//#include "spdlog/spdlog.h"
 #include "blockwise.h"
 #include "consts.h"
 
 using namespace std;
-using namespace spdlog;
+//using namespace spdlog;
 
 namespace coap
 {
@@ -26,12 +26,12 @@ static inline bool is_block_option_length_correct(uint8_t length)
 
 bool Blockwise::decode_block_option(const Option &opt)
 {
-    set_level(level::debug);
+    //set_level(level::debug);
 
     if (opt.number() != BLOCK_1
         && opt.number() != BLOCK_2)
     {
-        debug("There are no any BLOCK options");
+        //debug("There are no any BLOCK options");
         return false;
     }
 
@@ -39,7 +39,7 @@ bool Blockwise::decode_block_option(const Option &opt)
 
     if(!is_block_option_length_correct(optLen))
     {
-        debug("Wrong size of option");
+        //debug("Wrong size of option");
         return false;
     }
 
