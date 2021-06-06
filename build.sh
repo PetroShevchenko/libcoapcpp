@@ -28,9 +28,10 @@ mkdir -p third-party
 mkdir -p build
 
 if [ "$TARGET" = "POSIX" ];then
-
+    mkdir -p examples/POSIX/build
     if [ "$BUILD_TYPE" = "NATIVE" ];then
         cd build && cmake .. && make -j$(nproc || echo 2)
+	cd ../examples/POSIX/build && cmake .. && make -j$(nproc || echo 2)
 
     elif [ "$BUILD_TYPE" = "DOCKER" ];then
         cd script/docker && docker build -t libcoapcpp-image --rm -f ${DOCKER_FILE} ../..
@@ -41,13 +42,13 @@ if [ "$TARGET" = "POSIX" ];then
     fi
 
 elif [ "$TARGET" = "DISCO_H747I" ];then
-    echo "To build libcoapcpp for DISCO_H747I please use build.sh from examples/STM32"
+    cd examples/STM32 && ./build.sh all
 
 elif [ "$TARGET" = "DISCO_F746NG" ];then
-    echo "To build libcoapcpp for DISCO_F746NG please use build.sh from examples/STM32"
+    cd examples/STM32 && ./build.sh all
 
 elif [ "$TARGET" = "ESP32" ];then
-    echo "To build libcoapcpp for ESP32 please use build.sh from examples/ESP32"
+    cd examples/ESP32 && ./build.sh
 
 else
     echo "Error: TARGET isn't specified"
