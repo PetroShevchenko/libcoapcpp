@@ -110,6 +110,9 @@ struct Message
     OptionList &options()
     { return m_options; }
 
+    const OptionList &options() const
+    { return static_cast<const OptionList &>(m_options); }
+
     void header_as_byte(std::uint8_t value)
     { m_header.asByte = value; }
 

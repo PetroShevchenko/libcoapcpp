@@ -51,6 +51,9 @@ struct Uri
     std::vector<std::string> & asString()
     { return m_asString; }
 
+    const std::vector<std::string> & asString() const
+    { return static_cast<const std::vector<std::string> &>(m_asString); }
+
     std::vector<long int> & asInteger()
     { return m_asInteger; }
 
@@ -77,6 +80,9 @@ public:
 
     Uri & uri()
     { return m_uri; }
+
+    const Uri & uri() const
+    { return static_cast<const Uri&>(m_uri); }
 
 private:
     bool path_to_uri();

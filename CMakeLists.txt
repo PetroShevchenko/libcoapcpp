@@ -94,6 +94,11 @@ target_include_directories(
         ${SRC_DIR}/unix
 )
 
+target_compile_definitions(
+    ${LIB_PROJECT_NAME} PRIVATE
+        USE_SPDLOG
+)
+
 #target_compile_options(
 #    ${LIB_PROJECT_NAME} PRIVATE
 #        -Weffc++

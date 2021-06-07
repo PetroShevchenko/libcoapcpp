@@ -18,7 +18,6 @@ enum Blocksize
     BLOCK_SIZE_256,     //4
     BLOCK_SIZE_512,     //5
     BLOCK_SIZE_1024,    //6
-    BLOCK_SIZE_2048,    //7
 };
 
 class Blockwise
@@ -29,13 +28,14 @@ public:
           m_offset{0},
           m_size{0},
           m_total{0},
-          m_more{false}
+          m_more{false},
+          m_littleEndian{is_little_endian_byte_order()}
     {}
 
     virtual ~Blockwise() = default;
 
 public:
-    virtual bool get_header (const Packet &pack) = 0;
+    virtual bool get_header (Packet &pack) = 0;
     virtual bool set_header (std::uint16_t port, const UriPath &uri, Packet &pack) = 0;
 
 public:
@@ -69,11 +69,12 @@ public:
     void more(bool more)
     { m_more = more; }
 
+public:
+    bool encode_block_option(Option &opt);
 
 protected:
     bool decode_block_option(const Option &opt);
     bool decode_size_option(const Option &opt);
-    bool encode_block_option(Option &opt);
 
 protected:
     std::uint32_t m_number;  // block number
@@ -81,6 +82,7 @@ protected:
     std::uint16_t m_size;    // block size
     std::uint32_t m_total;   // total file size
     bool m_more;             // more bit
+    const bool m_littleEndian;// little endian byte order
 };
 
 class Block1 : public Blockwise
@@ -93,11 +95,11 @@ public:
     ~Block1() = default;
 
 public:
-    bool get_header (const Packet & pack) override;
+    bool get_header (Packet & pack) override;
     bool set_header (std::uint16_t port, const UriPath &uri, Packet &pack) override;
 
 private:
-    bool get_block1_option(const Packet &pack, size_t &optionQuantity, const Option ** opt); // replace opt parameter with vector
+    bool get_block1_option(Packet &pack, std::vector<Option *> &rOptions);
 };
 
 class Block2 : public Blockwise
@@ -110,11 +112,11 @@ public:
     ~Block2() = default;
 
 public:
-    bool get_header (const Packet &pack) override;
+    bool get_header (Packet &pack) override;
     bool set_header (std::uint16_t port, const UriPath &uri, Packet &pack) override;
 
 private:
-    bool get_block2_option(const Packet &pack, size_t &optionQuantity, const Option ** opt);// replace opt parameter with vector
+    bool get_block2_option(Packet &pack, std::vector<Option *> &rOptions);
 };
 
 Blocksize size_to_sizeoption(size_t size);
