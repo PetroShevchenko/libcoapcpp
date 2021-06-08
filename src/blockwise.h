@@ -71,14 +71,14 @@ public:
 
 public:
     bool encode_block_option(Option &opt);
-
-protected:
-    bool decode_block_option(const Option &opt);
     bool decode_size_option(const Option &opt);
 
 protected:
+    bool decode_block_option(const Option &opt);
+
+protected:
     std::uint32_t m_number;  // block number
-    std::uint32_t m_offset;  // offset of stored file
+    std::uint32_t m_offset;  // offset of stored/sent file
     std::uint16_t m_size;    // block size
     std::uint32_t m_total;   // total file size
     bool m_more;             // more bit

@@ -14,7 +14,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/api)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 #############################################################
 # spdlog library
@@ -128,6 +127,8 @@ set(
        ${TEST_DIR}/test_uri.cc
        ${TEST_DIR}/test_dns_resolver.cc
        ${TEST_DIR}/test_socket.cc
+       ${TEST_DIR}/test_blockwise.cc
+       ${TEST_DIR}/test_common.cc
 )
 
 add_executable(

@@ -158,6 +158,9 @@ struct Message
     TokenType & token()
     { return m_token; }
 
+    const TokenType & token() const
+    { return static_cast<const TokenType &>(m_token); }
+
     void payload_offset(std::size_t value)
     { m_payloadOffset = value; }
 
@@ -166,6 +169,9 @@ struct Message
 
     PayloadType &payload()
     { return m_payload; }
+
+    const PayloadType &payload() const
+    { return static_cast<const PayloadType &>(m_payload); }
 
     void sort_options()
     { std::sort(m_options.begin(), m_options.end()); }

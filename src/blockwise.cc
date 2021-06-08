@@ -8,6 +8,8 @@
 #include "consts.h"
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 #include <arpa/inet.h>
+#else
+#include <lwip.h>
 #endif
 
 #ifndef USE_SPDLOG
@@ -263,6 +265,7 @@ static bool set_header(
                     Packet &pack
                 )
 {
+    set_level(level::debug);
     // clean all options
     pack.options().clear();
     // add option URI_PORT
@@ -297,14 +300,15 @@ static bool set_header(
     // if it is the first block
     if (obj->number() == 0)
     {
-        obj->more(false);
-        obj->size(BLOCK_SIZE_DEFAULT);
+        obj->size( !obj->size() ? BLOCK_SIZE_DEFAULT : obj->size());
+        obj->offset(0);
     }
+
     Option opt;
     opt.number(block1 ? BLOCK_1 : BLOCK_2);
     if (!obj->encode_block_option(opt))
     {
-        debug("Unable to encode BLOCK1 option");
+        debug("Unable to encode BLOCK option");
         return false;
     }
     pack.add_option (

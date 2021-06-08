@@ -1,4 +1,5 @@
 #include "packet.h"
+#include "test_common.h"
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
@@ -62,21 +63,6 @@ static const OptionNumber testOptionSet[] = {
 
 static uint8_t testOptionValue[32] = {0};
 
-#ifdef PRINT_TESTED_VALUES
-static void print_options(const Packet & packet)
-{
-    info("options :");
-    for (auto opt : const_cast<Packet &>(packet).options())
-    {
-        info("number : {0:d}", opt.number());
-        info("delta : {0:d}", opt.delta());
-        info("length : {0:d}", opt.length());
-        info("value : ");
-        fmt::print("{:02x}", fmt::join(opt.value(), ", "));
-        fmt::print("\n");
-    }
-}
-#endif
 
 TEST(testPacket, parse)
 {
@@ -87,20 +73,8 @@ TEST(testPacket, parse)
     ASSERT_TRUE(!ec.value());
 
 #ifdef PRINT_TESTED_VALUES
-    info("version : {0:d}", packet.version());
-    info("token length : {0:d}", packet.token_length());
-    info("type : {0:d}", packet.type());
-    info("code : {0:d}", packet.code_as_byte());
-    info("code detail : {0:d}", packet.code_detail());
-    info("code class : {0:d}", packet.code_class());
-    info("message id : {0:d}", packet.identity());
-    print_options(packet);
-    info("payload size: {0:d}", packet.payload().size());
-    info("payload : ");
-    fmt::print("{:02x}", fmt::join(packet.payload(), ", "));
-    fmt::print("\n");
+    print_packet(packet);
 #endif
-
 
     EXPECT_EQ(packet.version(), COAP_VERSION);
     EXPECT_EQ(packet.type(), CONFIRMABLE);
@@ -448,15 +422,7 @@ TEST(testPacket, serialize)
     ASSERT_TRUE(!ec.value());
 
 #ifdef PRINT_TESTED_VALUES
-    info("Serialized packet :");
-    for (size_t i = 0; i < size; i++)
-    {
-        fmt::print("{:02x}", buffer[i]);
-        fmt::print(" ,");
-        if (i != 0 && (i + 1) % 16 == 0)
-            fmt::print("\n");
-    }
-    fmt::print("\n");
+    print_serialized_packet(buffer, size);
 #endif
 
     delete [] buffer;
