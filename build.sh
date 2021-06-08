@@ -27,11 +27,10 @@ fi
 mkdir -p third-party
 mkdir -p build
 
-if [ "$TARGET" = "POSIX" ];then
-    mkdir -p examples/POSIX/build
+if [ "$TARGET" = "POSIX" ];then 
     if [ "$BUILD_TYPE" = "NATIVE" ];then
         cd build && cmake .. && make -j$(nproc || echo 2)
-	cd ../examples/POSIX/build && cmake .. && make -j$(nproc || echo 2)
+	mkdir -p examples && cd examples && cmake ../../examples/POSIX && make -j$(nproc || echo 2)
 
     elif [ "$BUILD_TYPE" = "DOCKER" ];then
         cd script/docker && docker build -t libcoapcpp-image --rm -f ${DOCKER_FILE} ../..
