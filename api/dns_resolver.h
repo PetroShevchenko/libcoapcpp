@@ -8,15 +8,15 @@ class DnsResolver
 {
 public:
     DnsResolver()
-    : m_port{-1}
+    : m_uri{}, m_address4{}, m_address6{}, m_port{-1}
     {}
 
     DnsResolver(const char * uri)
-    : m_uri{uri}, m_port{-1}
+    : m_uri{uri}, m_address4{}, m_address6{}, m_port{-1}
     {}
 
     DnsResolver(const char * hostname, int port)
-    : m_uri{hostname}, m_port{port}
+    : m_uri{hostname}, m_address4{}, m_address6{}, m_port{port}
     {}
 
     virtual ~DnsResolver() = default;

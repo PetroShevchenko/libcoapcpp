@@ -37,7 +37,13 @@ struct Uri
     }
 
     Uri(Uri &&other)
-    { operator=(std::move(other)); }
+    : m_type(other.m_type),
+      m_asString(std::move(other.m_asString)),
+      m_asInteger(std::move(other.m_asInteger))
+    { other.m_type = URI_TYPE_INTEGER; }
+
+    //Uri(Uri &&other)
+    //{ operator=(std::move(other)); }
 
     Uri(const Uri &) = delete;
     Uri &operator=(const Uri &) = delete;

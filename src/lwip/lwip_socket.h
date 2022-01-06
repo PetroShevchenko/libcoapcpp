@@ -1,22 +1,33 @@
-#ifndef _UNIX_SOCKET_H
-#define _UNIX_SOCKET_H
-#include "socket.h"
+#ifndef _LWIP_SOCKET_H
+#define _LWIP_SOCKET_H
+#include "api/socket.h"
 #include "error.h"
-#include <netinet/in.h>
+#include "lwipopts.h"
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
 #include <memory>
 #include <typeinfo>
-#include <iostream>
 
-class UnixSocketAddress : public SocketAddress
+#undef close
+#undef connect
+#undef accept 
+#undef sendto
+#undef recvfrom 
+#undef bind
+#undef listen
+#undef setsockoption
+#undef getsockoption
+
+class LwipSocketAddress : public SocketAddress
 {
 public:
-    UnixSocketAddress()
+    LwipSocketAddress()
         : SocketAddress(SOCKET_TYPE_UNSPEC),
           m_address4{0},
           m_address6{0}
     {}
 
-    UnixSocketAddress(
+    LwipSocketAddress(
             const struct sockaddr_in & addr4,
             const struct sockaddr_in6 & addr6
         )
@@ -25,7 +36,7 @@ public:
           m_address6{addr6}
     {}
 
-    UnixSocketAddress(
+    LwipSocketAddress(
             const struct sockaddr_in & addr
         )
         : SocketAddress(SOCKET_TYPE_IP_V4),
@@ -33,7 +44,7 @@ public:
           m_address6{0}
     {}
 
-    UnixSocketAddress(
+    LwipSocketAddress(
             const struct sockaddr_in6 & addr
         )
         : SocketAddress(SOCKET_TYPE_IP_V6),
@@ -41,7 +52,7 @@ public:
           m_address6{addr}
     {}
 
-    ~UnixSocketAddress() override = default;
+    ~LwipSocketAddress() override = default;
 
 public:
     const sockaddr_in & address4() const
@@ -64,16 +75,16 @@ private:
     struct sockaddr_in6 m_address6;
 };
 
-class UnixSocket : public Socket
+class LwipSocket : public Socket
 {
 public:
-    UnixSocket()
+    LwipSocket()
     : m_descriptor{-1}, m_address{nullptr}
     {}
 
-    UnixSocket(int domain, int type, int protocol, std::error_code &ec);
+    LwipSocket(int domain, int type, int protocol, std::error_code &ec);
 
-    ~UnixSocket() override;
+    ~LwipSocket() override;
 
 public:
     void close(std::error_code &ec) override;
@@ -95,12 +106,12 @@ public:
     int descriptor() const
     { return m_descriptor; }
 
-    std::shared_ptr<UnixSocketAddress> & address()
+    std::shared_ptr<LwipSocketAddress> & address()
     { return m_address; }
 
 private:
     int m_descriptor;
-    std::shared_ptr<UnixSocketAddress> m_address;
+    std::shared_ptr<LwipSocketAddress> m_address;
 };
 
 #endif

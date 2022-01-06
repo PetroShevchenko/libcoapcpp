@@ -9,7 +9,7 @@
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 #include <arpa/inet.h>
 #else
-#include <lwip.h>
+#include "lwip/def.h"
 #endif
 
 #ifndef USE_SPDLOG
