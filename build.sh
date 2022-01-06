@@ -2,8 +2,8 @@
 
 TARGET=POSIX
 #TARGET=ESP32
-#TARGET=DISCO_H747I
-#TARGET=DISCO_F746NG
+#TARGET=NUCLEO-F429ZI
+#TARGET=NUCLEO-H743ZI
 
 BUILD_TYPE=NATIVE
 #BUILD_TYPE=DOCKER
@@ -40,14 +40,11 @@ if [ "$TARGET" = "POSIX" ];then
         echo "Error : BUILD_TYPE isn't specified"
     fi
 
-elif [ "$TARGET" = "DISCO_H747I" ];then
-    cd examples/STM32 && ./build.sh all
-
-elif [ "$TARGET" = "DISCO_F746NG" ];then
-    cd examples/STM32 && ./build.sh all
+elif [ "$TARGET" = "NUCLEO-F429ZI" ] || [ "$TARGET" = "NUCLEO-H743ZI" ];then
+    cd examples/$TARGET && ./build.sh all
 
 elif [ "$TARGET" = "ESP32" ];then
-    cd examples/ESP32 && ./build.sh
+    cd examples/$TARGET && ./build.sh
 
 else
     echo "Error: TARGET isn't specified"
