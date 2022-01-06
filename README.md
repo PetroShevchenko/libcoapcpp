@@ -10,9 +10,11 @@ libcoapcpp uses the following third party libraries:
 * spdlog
 * mbedtls
 * wolfssl
+* STM32CubeF4
+* STM32CubeH7
 
 ## Requirements
-Your computer must have at least 100 Mbytes of free disk space. 
+Your computer must have at least 5.0 Gbytes of free disk space to be able to download all third party libraries. 
 
 To build the library, use the following utilities:
 * cmake >= 3.5
@@ -42,7 +44,7 @@ following the instructions https://docs.docker.com/get-docker/.
 You can configure your build with script variables:
 * TARGET - select the target platform to be used
 
-Currently only POSIX platform is supported
+Currently only POSIX and NUCLEO-F429ZI platforms are supported
 * BUILD_TYPE - select build in host system (NATIVE) or docker container(DOCKER)
 * DOCKER_FILE - if you set BUILD_TYPE=DOCKER, there are three options availabe:
 
@@ -52,4 +54,4 @@ Currently only POSIX platform is supported
 
 ## Examples
 All provided examples will be compiled together with the library after running build.sh.
-There are the binaries of the examples in libcoapcpp/build/examples/bin.
+There are the binaries of the examples in libcoapcpp/build directory.
