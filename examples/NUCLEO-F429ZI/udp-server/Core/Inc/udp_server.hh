@@ -6,7 +6,7 @@
 #include <string>
 
 #define RECEIVE_BUFFER_SIZE 256U
-#define TRANSMIT_BUFFER_SIZE 256U
+#define TRANSMIT_BUFFER_SIZE 512U
 
 typedef void (*ReceivedPacketHandlerCallback)(const std::string &inBuffer, std::string &outBuffer, std::error_code &ec);
 
@@ -34,6 +34,7 @@ public:
 public:
 	void init(std::error_code &ec);
     void process();
+    void process2();
 
 protected:
     int                         m_port;
@@ -43,6 +44,9 @@ protected:
     char 				        m_receiveBuffer[RECEIVE_BUFFER_SIZE];
     char 				        m_transmitBuffer[TRANSMIT_BUFFER_SIZE];
     bool                        m_running;
+
+private:
+    void handle_request(std::error_code &ec);
 
 private:
     ReceivedPacketHandlerCallback m_callback;

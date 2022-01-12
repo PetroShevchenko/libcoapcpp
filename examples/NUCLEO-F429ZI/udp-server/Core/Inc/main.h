@@ -109,7 +109,10 @@ void Error_Handler(void);
 #define LD2_Pin GPIO_PIN_7
 #define LD2_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+#ifndef USE_LOG
 #define USE_LOG
+#endif
+#define TRANSMIT_TIMEOUT 5
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

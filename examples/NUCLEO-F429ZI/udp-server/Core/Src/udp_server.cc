@@ -4,6 +4,10 @@
 
 #define WAITTIME_IN_SECONDS 5U
 
+#define UDP_LOG_ENTER() LOG("Entering %s", __func__)
+#define UDP_LOG_EXIT() LOG("Leaving %s", __func__)
+#define UDP_LOG(...) LOG(__VA_ARGS__)
+
 using namespace std;
 
 UdpServer::UdpServer(int port, std::error_code &ec, bool version4)
@@ -41,6 +45,54 @@ void UdpServer::init(std::error_code &ec)
     m_serverSocket.bind(&m_serverAddress, ec);
 }
 
+void UdpServer::handle_request(std::error_code &ec)
+{
+    ssize_t received = -1;
+    LwipSocketAddress clientAddress;
+    LwipSocket * sock =  &m_serverSocket;
+
+    UDP_LOG_ENTER();
+
+    memset(m_receiveBuffer, 0, RECEIVE_BUFFER_SIZE);
+
+    received = sock->recvfrom(ec, m_receiveBuffer, RECEIVE_BUFFER_SIZE, &clientAddress);
+    if (ec.value())
+    {
+        UDP_LOG("sock->recvfrom() error: %s", ec.message().c_str());
+        UDP_LOG_EXIT();
+        return;
+    }
+    if (received <= 0)
+    {
+        UDP_LOG("sock->recvfrom() returned %d", received);
+        UDP_LOG_EXIT();
+        ec = make_error_code(CoapStatus::COAP_ERR_RECEIVE);
+        return;
+    }
+
+    memset(m_transmitBuffer, 0, TRANSMIT_BUFFER_SIZE);
+
+    string answer(m_transmitBuffer);
+    answer.resize(sizeof(m_transmitBuffer));
+    string request(m_receiveBuffer);
+    request.resize(received);
+
+    m_callback(request, answer, ec);
+
+    if (ec.value())
+    {
+        UDP_LOG("m_callback() error: %s", ec.message().c_str());
+        answer = "Error: " + ec.message();
+        ec.clear();
+    }
+    sock->sendto(answer.data(), answer.length(), static_cast<const SocketAddress *>(&clientAddress), ec);
+    if (ec.value())
+    {
+        UDP_LOG("sock->sendto() error: %s", ec.message().c_str());
+    }
+    UDP_LOG_EXIT();
+}
+
 void UdpServer::process()
 {
     int status;
@@ -49,7 +101,7 @@ void UdpServer::process()
     std::error_code ec;
     LwipSocket * sock =  &m_serverSocket;
     
-    LOG("Entering the communication loop");
+    UDP_LOG_ENTER();
 
     while (m_running)
     {
@@ -59,59 +111,70 @@ void UdpServer::process()
         tv.tv_sec = WAITTIME_IN_SECONDS;
         tv.tv_usec = 0;
 
-        LOG("select");
-
         status = ::lwip_select (FD_SETSIZE, &readDescriptors, NULL, NULL, &tv);
 
         if (status == 0)
         {
-            LOG("select() : receive timeout %d seconds is over", WAITTIME_IN_SECONDS);
+            UDP_LOG("select() : receive timeout %d seconds is over", WAITTIME_IN_SECONDS);
             continue;
         }
 
         if (status == -1)
         {
-            LOG("select() : error code %d", errno);
+            UDP_LOG("select() : error code %d", errno);
             continue;
         }
-
-        ssize_t received = -1;
-        LwipSocketAddress clientAddress;
-
-        LOG("check received");
         // if there was received something on socket
         if (FD_ISSET(sock->descriptor(), &readDescriptors))
         {
-        	LOG("sock->descriptor()");
-            memset(m_receiveBuffer, 0, RECEIVE_BUFFER_SIZE);
-        	received = sock->recvfrom(ec, m_receiveBuffer, RECEIVE_BUFFER_SIZE, &clientAddress);
- 			if (ec.value())
- 			{
- 				LOG("sock->recvfrom() error: %s", ec.message().c_str());
- 				continue;
- 			}
- 			if (received <= 0)
- 			{
- 				LOG("sock->recvfrom() returned %d", received);
- 				continue;
- 			}
-
-            memset(m_transmitBuffer, 0, TRANSMIT_BUFFER_SIZE);
-            string answer(m_transmitBuffer);
-
- 			m_callback(string(m_receiveBuffer), answer, ec);
-
- 			if (ec.value())
- 			{
- 				LOG("m_callback() error: %s", ec.message().c_str());
- 				continue;
- 			}
- 			sock->sendto(answer.data(), answer.length(), static_cast<const SocketAddress *>(&clientAddress), ec);
- 			if (ec.value())
- 			{
- 				LOG("sock->sendto() error: %s", ec.message().c_str());
- 			}
+            handle_request(ec);
+            if (ec.value())
+            {
+                UDP_LOG("handle_request() : error: %s", ec.message().c_str());
+            }
         }
     } // while
-    LOG("Exiting the communication loop");
+    UDP_LOG_EXIT();
+}
+
+void UdpServer::process2()
+{
+    UDP_LOG_ENTER();
+
+    int status;
+    std::error_code ec;
+    LwipSocket * sock =  &m_serverSocket;
+
+    struct pollfd d;
+    d.events = POLLIN;
+    d.fd = sock->descriptor();
+
+    while (m_running)
+    {
+        status = ::lwip_poll (&d, 1, WAITTIME_IN_SECONDS*1000);
+ 
+        if (status == 0)
+        {
+            UDP_LOG("poll() : receive timeout %d seconds is over", WAITTIME_IN_SECONDS);
+            continue;
+        }
+
+        if (status == -1)
+        {
+            UDP_LOG("poll() : error code %d", errno);
+            ::lwip_close(d.fd);
+            break;
+        }
+        // if there was received something on socket
+        if (d.revents & POLLIN )
+        {
+            d.revents = 0;
+            handle_request(ec);
+            if (ec.value())
+            {
+                UDP_LOG("handle_request() : error: %s", ec.message().c_str());
+            }
+        }
+    } // while
+    UDP_LOG_EXIT();
 }

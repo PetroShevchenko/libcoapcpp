@@ -11,8 +11,6 @@
 #define DHCP_STATE_BOUND 10
 #endif
 
-#define TRANSMIT_TIMEOUT 5
-
 #define UDP_PORT_NUM 5555UL
 
 using namespace std;
@@ -303,8 +301,8 @@ void StartUdpServerTask(void *argument)
 	server.set_received_packed_handler_callback(static_cast<ReceivedPacketHandlerCallback>(command_handler));
 	LOG("start");
 	server.start();
-	LOG("process");	
-	server.process();
+	LOG("process2");	
+	server.process2();
 
 	while(true)
 	{
