@@ -2,6 +2,14 @@
 
 libcoapcpp is an open-source C++ implementattion of the constrained application protocol (CoAP).
 
+## Library content
+
+libcoapcpp supports the features described in the following RFCs:
+* RFC7252 The Constrained Application Protocol (CoAP) 							--> Status: Implemented
+* RFC7959 Block-Wise Transfers in the Constrained Application Protocol (CoAP) 	--> Status: Implemented
+* RFC6690 Constrained RESTful Environments (CoRE) Link Format 					--> Status: Planned to implement
+* RFC7641 Observing Resources in the Constrained Application Protocol (CoAP) 	--> Status: Planned to implement 
+
 ## Introduction
 libcoapcpp is a library that can be linked from your own source code.
 This implementation also includes several examples of using the library.
@@ -20,6 +28,7 @@ To build the library, use the following utilities:
 * cmake >= 3.5
 * GNU make >= 4.1
 * g++ >= 7.4
+* arm-none-eabi-g++ >= 10.3
 
 Docker container technology can be used to build the library and examples.
 
@@ -55,3 +64,4 @@ Currently only POSIX and NUCLEO-F429ZI platforms are supported
 ## Examples
 All provided examples will be compiled together with the library after running build.sh.
 There are the binaries of the examples in libcoapcpp/build directory.
+For more information, please read the README of the example you are interested in.
