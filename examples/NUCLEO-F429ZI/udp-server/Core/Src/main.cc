@@ -197,7 +197,7 @@ int main(void)
 	SetThreadAttributes(
 					&UdpServerTask_attributes,
 					"UdpServerTask",
-					1024 * 32,
+					1024 * 4,
 					osPriorityLow
 				);
 
@@ -283,7 +283,7 @@ void StartUdpServerTask(void *argument)
 	(void)argument;
 
 	error_code ec;
-	UdpServer server(UDP_PORT_NUM, ec, true);
+	static UdpServer server(UDP_PORT_NUM, ec, true);
 	if (ec.value())
 	{
 		LOG("Cannot create UdpServer object: %s", ec.message().c_str());

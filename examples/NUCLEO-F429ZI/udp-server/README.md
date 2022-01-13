@@ -232,12 +232,6 @@ void Command::ctrl_cmd_handler(const std::string &request, std::string &answer, 
 	size_t pos = request.find("ctrl");
 	size_t offset = pos + sizeof("ctrl");
 	size_t len  = request.length() - offset;
-	if (len > answer.length())
-	{
-		ec = make_error_code(CoapStatus::COAP_ERR_BUFFER_SIZE);
-		CMD_LOG_EXIT();
-		return;		
-	}
 	unsigned int ledNum;
 	sscanf(request.substr(offset, len).c_str(), "led%u ", &ledNum);
 	if (ledNum < 1 || ledNum > 3)
