@@ -83,6 +83,7 @@ set(
         ${SRC_DIR}/unix/unix_connection.cc
         ${SRC_DIR}/unix/unix_udp_client.cc
         ${SRC_DIR}/unix/unix_dtls_client.cc
+        ${SRC_DIR}/unix/unix_udp_server.cc
 )
 
 add_library(
@@ -101,6 +102,8 @@ target_include_directories(
 target_compile_definitions(
     ${LIB_PROJECT_NAME} PRIVATE
         USE_SPDLOG
+        USE_CREATE_SERVER_CONNECTION
+        USE_CREATE_CLIENT_CONNECTION
 )
 
 #target_compile_options(

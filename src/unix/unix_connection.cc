@@ -6,8 +6,14 @@
 #ifdef USE_CREATE_CLIENT_CONNECTION
 #include "unix_udp_client.h"
 #include "unix_dtls_client.h"
-using namespace Unix;
 #endif
+
+#ifdef USE_CREATE_SERVER_CONNECTION
+#include "unix_udp_server.h"
+//#include "unix_dtls_server.h"
+#endif
+
+using namespace Unix;
 
 Socket * create_socket(ConnectionType type, DnsResolver *dns, std::error_code &ec)
 {
@@ -105,3 +111,31 @@ ClientConnection * create_client_connection(
     return nullptr;
 }
 #endif// USE_CREATE_CLIENT_CONNECTION
+
+#ifdef USE_CREATE_SERVER_CONNECTION
+ServerConnection * create_server_connection(
+            ConnectionType type,
+            int port,
+            bool version4,
+            std::error_code &ec
+        )
+{
+    switch(type)
+    {
+        case UDP:
+            return new UdpServer(port, version4, ec);
+
+        case DTLS:
+        case TCP:
+        case TLS:
+            ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
+            break;
+
+        default:
+            ec = make_system_error(EINVAL);
+            break;
+    }
+    return nullptr;
+}
+
+#endif// USE_CREATE_SERVER_CONNECTION

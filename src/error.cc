@@ -44,6 +44,9 @@ std::string CoapErrorCategory::message(int ev) const
         case CoapStatus::COAP_ERR_CREATE_SOCKET:
             return "Can not create socket";
 
+        case CoapStatus::COAP_ERR_SOCKET_NOT_BOUND:
+            return "The socket is not bound";
+
         case CoapStatus::COAP_ERR_INCOMPLETE_SEND:
             return "The buffer was incompletely sent";
 

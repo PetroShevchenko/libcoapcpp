@@ -98,5 +98,6 @@ protected:
 Socket * create_socket(ConnectionType type, DnsResolver *dns, std::error_code &ec);
 ClientConnection * create_client_connection(ConnectionType type, const char * hostname, int port, std::error_code &ec);
 ClientConnection * create_client_connection(const char * uri, std::error_code &ec);
+ServerConnection * create_server_connection();
 
 #endif
