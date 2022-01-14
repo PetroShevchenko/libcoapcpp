@@ -117,7 +117,7 @@ enum OptionNumber
 enum MediaType
 {
     TEXT_PLAIN      = 0,
-    LINK_FORMAT     = 40,
+    LINK_FORMAT     = 40,   //application/link-format
     XML             = 41,
     OCTET_STREAM    = 42,   //application/octet-stream
     EXI             = 47,

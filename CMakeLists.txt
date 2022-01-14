@@ -77,8 +77,12 @@ set(
         ${SRC_DIR}/blockwise.cc
         ${SRC_DIR}/error.cc
         ${SRC_DIR}/utils.cc
+        ${SRC_DIR}/wolfssl_error.cc
         ${SRC_DIR}/unix/unix_socket.cc
         ${SRC_DIR}/unix/unix_dns_resolver.cc
+        ${SRC_DIR}/unix/unix_connection.cc
+        ${SRC_DIR}/unix/unix_udp_client.cc
+        ${SRC_DIR}/unix/unix_dtls_client.cc
 )
 
 add_library(
@@ -91,6 +95,7 @@ target_include_directories(
         ${INC_DIR}
         ${SRC_DIR}
         ${SRC_DIR}/unix
+        ${WOLFSSL_PATH}
 )
 
 target_compile_definitions(

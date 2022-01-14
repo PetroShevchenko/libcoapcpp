@@ -23,8 +23,6 @@ set(
 
 set(
     SRC_LIST
-        ${COMMON_PATH}/connection.cc
-        ${COMMON_PATH}/udp_client.cc
         ${SRC_DIR}/udp-echo-client.cc
 )
 

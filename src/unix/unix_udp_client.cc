@@ -1,8 +1,11 @@
-#include "udp_client.h"
+#include "unix_udp_client.h"
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 
 using namespace spdlog;
+
+namespace Unix
+{
 
 void UdpClient::connect(std::error_code &ec)
 {
@@ -32,7 +35,7 @@ void UdpClient::connect(std::error_code &ec)
     }
 }
 
-void UdpClient::disconnect(std::error_code &ec)
+void UdpClient::close(std::error_code &ec)
 {
     ec.clear();
 
@@ -86,3 +89,5 @@ void UdpClient::receive(void * buffer, size_t &length, std::error_code &ec, size
         length = static_cast<size_t>(received);
     }
 }
+
+}// namespace unix

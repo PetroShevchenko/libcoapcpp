@@ -1,4 +1,4 @@
-#include "dtls_client.h"
+#include "unix_dtls_client.h"
 #include "utils.h"
 #include "wolfssl_error.h"
 #include <netdb.h>
@@ -12,6 +12,11 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <spdlog/spdlog.h>
+
+using namespace spdlog;
+
+namespace Unix
+{
 
 void DtlsClient::handshake(std::error_code &ec)
 {
@@ -109,7 +114,7 @@ void DtlsClient::connect(std::error_code &ec)
     handshake(ec);
 }
 
-void DtlsClient::disconnect(std::error_code &ec)
+void DtlsClient::close(std::error_code &ec)
 {
     ec.clear();
 
@@ -155,3 +160,5 @@ void DtlsClient::receive(void * buffer, size_t &length, std::error_code &ec, siz
 
     length = (size_t)received;
 }
+
+}// namespace unix

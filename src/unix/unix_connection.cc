@@ -4,8 +4,9 @@
 #include "unix_socket.h"
 
 #ifdef USE_CREATE_CLIENT_CONNECTION
-#include "udp_client.h"
-#include "dtls_client.h"
+#include "unix_udp_client.h"
+#include "unix_dtls_client.h"
+using namespace Unix;
 #endif
 
 Socket * create_socket(ConnectionType type, DnsResolver *dns, std::error_code &ec)

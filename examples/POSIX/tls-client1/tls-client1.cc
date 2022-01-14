@@ -14,7 +14,7 @@
 #include <cstring>
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
-#include "common/wolfssl_error.h"
+#include "wolfssl_error.h"
 
 #include "common/tcp_client.h"
 #include "common/http_requests.h"

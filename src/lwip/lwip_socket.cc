@@ -312,7 +312,7 @@ void LwipSocket::listen(error_code &ec, int max_connections_in_queue)
 
 void LwipSocket::set_blocking(bool blocking, error_code &ec)
 {
-    int status = fcntl(m_descriptor, F_GETFL, NULL);
+    int status = fcntl(m_descriptor, F_GETFL, 0);
     if (status < 0)
     {
         ec = make_system_error(errno);
