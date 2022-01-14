@@ -239,6 +239,7 @@ void Command::ctrl_cmd_handler(const std::string &request, std::string &answer, 
 		ec = make_system_error(EINVAL);
 		CMD_LOG("LED=%u",ledNum);
 		CMD_LOG_EXIT();
+		return;
 	}
 	ledNum -= 1;// LED1..LED3 ==> index {0..2}
 	char cmd[sizeof("toggle")];
@@ -262,7 +263,8 @@ void Command::ctrl_cmd_handler(const std::string &request, std::string &answer, 
 	{
 		ec = make_system_error(EINVAL);
 		CMD_LOG("cmd=%s",cmd);
-		CMD_LOG_EXIT();		
+		CMD_LOG_EXIT();
+		return;		
 	}
 	answer = "OK\n";
 	CMD_LOG_EXIT();
