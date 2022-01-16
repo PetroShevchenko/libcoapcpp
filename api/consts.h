@@ -122,8 +122,8 @@ enum MediaType
     OCTET_STREAM    = 42,   //application/octet-stream
     EXI             = 47,
     COAP_JSON       = 50,
-    SEML_JSON       = 110,  //application/senml+json
-    SEML_CBOR       = 112,  //application/senml+cbor
+    SENML_JSON      = 110,  //application/senml+json
+    SENML_CBOR      = 112,  //application/senml+cbor
     LWM2M_TLV       = 11542,//application/vnd.oma.lwm2m+tlv
     LWM2M_JSON      = 11543 //application/vnd.oma.lwm2m+json
 };

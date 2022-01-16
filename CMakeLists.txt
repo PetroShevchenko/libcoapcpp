@@ -46,6 +46,16 @@ include_directories(${MBEDTLS_PATH}/mbedtls)
 add_subdirectory(${MBEDTLS_PATH})
 
 #############################################################
+# cJSON library
+#############################################################
+
+set(CJSON_PATH ${CMAKE_CURRENT_LIST_DIR}/third-party/cJSON)
+
+include_directories(${CJSON_PATH})
+
+add_subdirectory(${CJSON_PATH})
+
+#############################################################
 # coapcpp library
 #############################################################
 
@@ -78,6 +88,8 @@ set(
         ${SRC_DIR}/error.cc
         ${SRC_DIR}/utils.cc
         ${SRC_DIR}/wolfssl_error.cc
+        ${SRC_DIR}/core_link.cc
+        ${SRC_DIR}/senml_json.cc
         ${SRC_DIR}/unix/unix_socket.cc
         ${SRC_DIR}/unix/unix_dns_resolver.cc
         ${SRC_DIR}/unix/unix_connection.cc
@@ -168,4 +180,6 @@ target_link_libraries(
         coapcpp
         spdlog
         pthread
+        wolfssl
+        cjson
 )
