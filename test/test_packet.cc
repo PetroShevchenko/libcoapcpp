@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/bin_to_hex.h>
 #include <cstdint>
 #include <cstring>
 
@@ -426,6 +427,22 @@ TEST(testPacket, serialize)
 #endif
 
     delete [] buffer;
+}
+
+TEST(testPacket, Payload)
+{
+    const char * testString = "This is a test string";
+    Payload payload(testString);
+
+#ifdef PRINT_TESTED_VALUES
+    info("Payload type:{0:d}",payload.type());
+    info("Payload data: {}", to_hex(payload.data().asString));
+#endif  
+
+    int r = memcmp(testString, payload.data().asString.data(), payload.data().asString.length());
+
+    ASSERT_TRUE(r == 0);
+    ASSERT_TRUE(payload.type() == Payload::TYPE_STRING);
 }
 
 int main(int argc, char ** argv)

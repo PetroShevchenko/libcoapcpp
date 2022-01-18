@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <algorithm>
+#include <string>
 #include <array>
 #include "consts.h"
 #include "error.h"
@@ -266,6 +267,60 @@ private:
 };
 
 std::uint16_t generate_identity();
+
+class Payload
+{
+
+public:
+    enum Type // Payload::Type
+    {
+        TYPE_STRING,
+        TYPE_HEX_ARRAY,
+    };
+
+    union Data // Payload::Data
+    {
+        Data()
+            : asString{}
+        {}
+        Data(const char *str)
+            : asString{str}
+        {}
+        Data(const uint8_t *hex, size_t size)
+        {
+            for (size_t i = 0; i < size; ++i)
+                asHexArray[i] = hex[i];
+        }
+        ~Data()
+        {}
+
+        std::string asString;
+        std::vector<uint8_t> asHexArray;
+    };
+
+public:
+    Payload()
+        : m_type{TYPE_STRING}, m_data{}
+    {}
+    Payload(const char *str)
+        : m_type{TYPE_STRING}, m_data{str}
+    {}
+    Payload(const uint8_t *hex, size_t size)
+        : m_type{TYPE_HEX_ARRAY}, m_data{hex, size}
+    {}
+    ~Payload() = default;
+
+public:
+    Type type() const
+    { return m_type; }
+
+    const Data & data() const
+    { return static_cast<const Data&>(m_data); }
+
+private:
+    Type    m_type;
+    Data    m_data;
+};
 
 } // namespace coap
 

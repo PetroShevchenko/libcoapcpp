@@ -158,7 +158,7 @@ TEST(testBlockwise, decodeBlockOption)
 {
     Option opt;
     opt.number(SIZE_1);
-    opt.value()[0] = 50;
+    opt.value().push_back(50);    
     Block1 block1;
 
     bool status = block1.decode_size_option(opt);

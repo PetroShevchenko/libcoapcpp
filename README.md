@@ -63,6 +63,14 @@ Currently only POSIX and NUCLEO-F429ZI platforms are supported
 	- dockerfile.debian - Debian Linux Docker image
 	- dockerfile.ubuntu - Ubuntu Linux Docker image
 
+## Testing
+libcoapcpp provides unit tests, placed in the test directory, all of them will be compiled when build.sh is run.
+The unit tests use the Google Test framework. 
+Before using the unit tests, make sure you have the Google Test library installed (third-party/googletest)
+To run the unit tests, use test_run.sh script:
+
+`$ ./test_run.sh`   
+
 ## Examples
 All provided examples will be compiled together with the library after running build.sh.
 There are the binaries of the examples in libcoapcpp/build directory.
