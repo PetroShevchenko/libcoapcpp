@@ -7,6 +7,8 @@
 #include <array>
 #include "consts.h"
 #include "error.h"
+#include "core_link.h"
+#include "senml_json.h"
 
 namespace coap
 {
@@ -268,58 +270,79 @@ private:
 
 std::uint16_t generate_identity();
 
-class Payload
+struct DataType
 {
-
-public:
-    enum Type // Payload::Type
+    enum ValueType
     {
         TYPE_STRING,
         TYPE_HEX_ARRAY,
+        TYPE_SENML_JSON,
+        TYPE_CORE_LINK,
     };
 
-    union Data // Payload::Data
+    struct Value
     {
-        Data()
-            : asString{}
+        ValueType type;
+        std::string asString;
+        std::vector<uint8_t> asHexArray;
+        std::vector<SenmlJsonType> asSenmlJson;
+        std::vector<CoreLinkType> asCoreLink;
+
+        Value(const char *str)
+        : type{TYPE_STRING}, asString{str}, asHexArray{0}, asSenmlJson{0}, asCoreLink{0}
         {}
-        Data(const char *str)
-            : asString{str}
-        {}
-        Data(const uint8_t *hex, size_t size)
+
+        Value(const uint8_t *hex, size_t size)
+        : type{TYPE_HEX_ARRAY}, asString{}, asSenmlJson{0}, asCoreLink{0}
         {
             for (size_t i = 0; i < size; ++i)
                 asHexArray[i] = hex[i];
         }
-        ~Data()
+
+        Value(const std::vector<SenmlJsonType> &senmlJson)
+        : type{TYPE_SENML_JSON}, asString{}, asHexArray{0}, asSenmlJson{senmlJson}, asCoreLink{0}
         {}
 
-        std::string asString;
-        std::vector<uint8_t> asHexArray;
+        Value(const std::vector<CoreLinkType> &coreLink)
+        : type{TYPE_CORE_LINK}, asString{}, asHexArray{0}, asSenmlJson{0}, asCoreLink{coreLink}
+        {}
+
+        Value(const Value &other)
+        {
+            if (this != &other)
+            {
+                type = other.type;
+                asString = other.asString;
+                asHexArray = other.asHexArray;
+                asSenmlJson = other.asSenmlJson;
+                //asCoreLink = other.asCoreLink; // TODO Uncomment after CoreLinkType implementation
+            }
+        }
+
+        ~Value()
+        {}
     };
 
-public:
-    Payload()
-        : m_type{TYPE_STRING}, m_data{}
-    {}
-    Payload(const char *str)
-        : m_type{TYPE_STRING}, m_data{str}
-    {}
-    Payload(const uint8_t *hex, size_t size)
-        : m_type{TYPE_HEX_ARRAY}, m_data{hex, size}
-    {}
-    ~Payload() = default;
+    Value       value;
 
-public:
-    Type type() const
-    { return m_type; }
+    DataType(const char *str)
+    : value{str}
+    {}
 
-    const Data & data() const
-    { return static_cast<const Data&>(m_data); }
+    DataType(const uint8_t *hex, size_t size)
+    : value{hex, size}
+    {}
 
-private:
-    Type    m_type;
-    Data    m_data;
+    DataType(const std::vector<SenmlJsonType> &senmlJson)
+    : value{senmlJson}
+    {}
+
+    DataType(const std::vector<CoreLinkType> &coreLink)
+    : value{coreLink}
+    {}
+
+    ~DataType()
+    {}
 };
 
 } // namespace coap

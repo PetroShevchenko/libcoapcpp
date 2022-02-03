@@ -90,6 +90,7 @@ set(
         ${SRC_DIR}/wolfssl_error.cc
         ${SRC_DIR}/core_link.cc
         ${SRC_DIR}/senml_json.cc
+        ${SRC_DIR}/base64.cc
         ${SRC_DIR}/unix/unix_socket.cc
         ${SRC_DIR}/unix/unix_dns_resolver.cc
         ${SRC_DIR}/unix/unix_connection.cc
@@ -149,6 +150,8 @@ set(
        ${TEST_DIR}/test_socket.cc
        ${TEST_DIR}/test_blockwise.cc
        ${TEST_DIR}/test_common.cc
+       ${TEST_DIR}/test_senml_json.cc
+       ${TEST_DIR}/test_base64.cc
 )
 
 add_executable(

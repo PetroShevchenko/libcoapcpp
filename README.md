@@ -7,7 +7,7 @@ libcoapcpp is an open-source C++ implementattion of the constrained application 
 libcoapcpp supports the features described in the following RFCs:
 * RFC7252 The Constrained Application Protocol (CoAP) 							--> Status: Implemented
 * RFC7959 Block-Wise Transfers in the Constrained Application Protocol (CoAP) 	--> Status: Implemented
-* RFC8428 Sensor Measurement Lists (SenML) 										--> Status: Planned to implement
+* RFC8428 Sensor Measurement Lists (SenML) 										--> Status: Implemented
 * RFC6690 Constrained RESTful Environments (CoRE) Link Format 					--> Status: Planned to implement
 * RFC7641 Observing Resources in the Constrained Application Protocol (CoAP) 	--> Status: Planned to implement 
 

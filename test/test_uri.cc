@@ -42,6 +42,7 @@ TEST(testUri, uriPath)
 {
     char longStr[URI_PATH_MAX_LENGTH - 1];
     memset(longStr,'a', sizeof(longStr));
+    longStr[URI_PATH_MAX_LENGTH - 2] = '\0';
 
     UriPath uriPath(longStr, ec);
 
@@ -50,8 +51,9 @@ TEST(testUri, uriPath)
 }
 
 {
-    char longStr[URI_PATH_MAX_LENGTH];
+    char longStr[URI_PATH_MAX_LENGTH + 1];
     memset(longStr,'a', sizeof(longStr));
+    longStr[URI_PATH_MAX_LENGTH] = '\0';
 
     UriPath uriPath(longStr, ec);
 

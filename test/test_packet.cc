@@ -429,20 +429,20 @@ TEST(testPacket, serialize)
     delete [] buffer;
 }
 
-TEST(testPacket, Payload)
+TEST(testPacket, DataType)
 {
     const char * testString = "This is a test string";
-    Payload payload(testString);
+    DataType data(testString);
 
 #ifdef PRINT_TESTED_VALUES
-    info("Payload type:{0:d}",payload.type());
-    info("Payload data: {}", to_hex(payload.data().asString));
+    info("Data type:{0:d}", data.value.type);
+    info("Data value: {}", to_hex(data.value.asString));
 #endif  
 
-    int r = memcmp(testString, payload.data().asString.data(), payload.data().asString.length());
+    int r = memcmp(testString, data.value.asString.data(), data.value.asString.length());
 
     ASSERT_TRUE(r == 0);
-    ASSERT_TRUE(payload.type() == Payload::TYPE_STRING);
+    ASSERT_TRUE(data.value.type == DataType::TYPE_STRING);
 }
 
 int main(int argc, char ** argv)

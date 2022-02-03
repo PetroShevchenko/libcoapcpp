@@ -115,6 +115,15 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_DTLS_CTX_INIT:
             return "Failed to initialize DTLS context";
+
+        case CoapStatus::COAP_ERR_CREATE_JSON:
+            return "Failed to create JSON content";
+
+        case CoapStatus::COAP_ERR_PARSE_JSON:
+            return "Failed to parse JSON content";
+
+        case CoapStatus::COAP_ERR_NO_JSON_FIELD:
+            return "Failed to find JSON field";
     }
     return "Unknown error";
 }
