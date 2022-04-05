@@ -26,6 +26,25 @@ UriPath::UriPath(Uri &&uri)
     uri_to_path();
 }
 
+UriPath::UriPath(UriPath &&other)
+{
+    if (this != &other)
+    {
+        m_path = std::move(other.m_path);
+        m_uri = std::move(other.m_uri);
+    }
+}
+
+UriPath &UriPath::operator=(UriPath &&other)
+{
+    if(this != &other)
+    {
+        m_path = std::move(other.m_path);
+        m_uri = std::move(other.m_uri);
+    }
+    return *this;
+}
+
 bool UriPath::path_to_uri()
 {
     char buffer[URI_PATH_MAX_LENGTH];
@@ -89,6 +108,19 @@ void UriPath::uri_to_path()
             m_path += std::to_string(m_uri.asInteger()[i]);
         }
     }
+}
+
+void Uri::clear()
+{
+    m_type = URI_TYPE_INTEGER;
+    m_asString.clear();
+    m_asInteger.clear();
+}
+
+void UriPath::clear()
+{
+    m_path.clear();
+    m_uri.clear();
 }
 
 }

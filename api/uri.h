@@ -42,9 +42,6 @@ struct Uri
       m_asInteger(std::move(other.m_asInteger))
     { other.m_type = URI_TYPE_INTEGER; }
 
-    //Uri(Uri &&other)
-    //{ operator=(std::move(other)); }
-
     Uri(const Uri &) = delete;
     Uri &operator=(const Uri &) = delete;
 
@@ -63,6 +60,8 @@ struct Uri
     std::vector<long int> & asInteger()
     { return m_asInteger; }
 
+    void clear();
+
 private:
     UriType                     m_type;
     std::vector<std::string>    m_asString;
@@ -72,8 +71,14 @@ private:
 class UriPath
 {
 public:
+    UriPath()
+    : m_path{}, m_uri{}
+    {}
     UriPath(const char *, std::error_code &);
     UriPath(Uri &&);
+    UriPath(UriPath &&);
+    UriPath &operator=(UriPath &&other);
+
     virtual ~UriPath()
     {}
 
@@ -81,7 +86,7 @@ public:
     std::string path() const
     { return m_path; }
 
-    void path(const std::string &path)
+    void path(const char *path)
     { m_path = path; }
 
     Uri & uri()
@@ -89,6 +94,8 @@ public:
 
     const Uri & uri() const
     { return static_cast<const Uri&>(m_uri); }
+
+    void clear();
 
 private:
     bool path_to_uri();

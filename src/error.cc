@@ -124,6 +124,12 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_NO_JSON_FIELD:
             return "Failed to find JSON field";
+
+        case CoapStatus::COAP_ERR_CREATE_CORE_LINK:
+            return "Failed to create CoRe-Link content";
+
+        case CoapStatus::COAP_ERR_PARSE_CORE_LINK:
+            return "Failed to parse CoRe-Link content";
     }
     return "Unknown error";
 }

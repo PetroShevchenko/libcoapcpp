@@ -40,6 +40,8 @@ enum class CoapStatus
     COAP_ERR_CREATE_JSON,
     COAP_ERR_PARSE_JSON,
     COAP_ERR_NO_JSON_FIELD,
+    COAP_ERR_CREATE_CORE_LINK,
+    COAP_ERR_PARSE_CORE_LINK,
 };
 
 namespace std
