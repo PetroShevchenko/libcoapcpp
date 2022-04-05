@@ -303,8 +303,8 @@ struct DataType
         : type{TYPE_SENML_JSON}, asString{}, asHexArray{0}, asSenmlJson{senmlJson}, asCoreLink{0}
         {}
 
-        Value(const std::vector<CoreLinkType> &coreLink)
-        : type{TYPE_CORE_LINK}, asString{}, asHexArray{0}, asSenmlJson{0}, asCoreLink{coreLink}
+        Value(std::vector<CoreLinkType> &&coreLink)
+        : type{TYPE_CORE_LINK}, asString{}, asHexArray{0}, asSenmlJson{0}, asCoreLink{std::move(coreLink)}
         {}
 
         Value(const Value &other)
@@ -337,8 +337,8 @@ struct DataType
     : value{senmlJson}
     {}
 
-    DataType(const std::vector<CoreLinkType> &coreLink)
-    : value{coreLink}
+    DataType(std::vector<CoreLinkType> &&coreLink)
+    : value{std::move(coreLink)}
     {}
 
     ~DataType()

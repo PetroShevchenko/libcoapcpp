@@ -79,7 +79,6 @@ set(
 set(
     LIB_SRC_LIST
         ${SRC_DIR}/packet.cc
-        ${SRC_DIR}/uri.h
         ${SRC_DIR}/uri.cc
         ${SRC_DIR}/endpoint.h
         ${SRC_DIR}/endpoint.cc
@@ -152,6 +151,7 @@ set(
        ${TEST_DIR}/test_common.cc
        ${TEST_DIR}/test_senml_json.cc
        ${TEST_DIR}/test_base64.cc
+       ${TEST_DIR}/test_core_link.cc
 )
 
 add_executable(
