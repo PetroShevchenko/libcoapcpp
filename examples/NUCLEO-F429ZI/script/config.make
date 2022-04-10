@@ -28,6 +28,7 @@ MCU_DEVICE 				:= STM32F429xx
 PROJECT_NAME			:= common-libraries
 PROJECT_PATH			:= ../common
 CUBE_PATH				:= $(PROJECT_PATH)/../../../third-party/STM32CubeF4
+CJSON_PATH 				:= $(PROJECT_PATH)/../../../third-party/cJSON
 
 TOOL_PATH				:= $(HOME)/gcc-arm-none-eabi-10.3-2021.07
 

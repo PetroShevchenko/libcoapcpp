@@ -79,6 +79,10 @@ compile_libraries()
     make -f "coapcpp.make" all -j$(nproc || echo 2)
     print_done
 
+    echo "$PROMPT ${INFO_COLOUR}Compiling of cJSON library...${RESET}"
+    make -f "cjson.make" all -j$(nproc || echo 2)
+    print_done
+
     cd ..
 }
 

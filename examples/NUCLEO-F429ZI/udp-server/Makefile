@@ -24,6 +24,7 @@ LIB						+= bsp
 LIB						+= freertos
 LIB						+= lwip
 LIB 					+= coapcpp
+LIB 					+= cjson
 
 LD_SCRIPT_PATH 			:= $(PROJECT_PATH)/../script
 LD_SCRIPT 				:= STM32F429ZITX_FLASH.ld
@@ -176,6 +177,9 @@ freertos:
 lwip:
 	make -f $(MAKE_SCRIPT_PATH)/lwip.make all -j$(shell nproc || echo 2)
 
+cjson:
+	make -f $(MAKE_SCRIPT_PATH)/cjson.make all -j$(shell nproc || echo 2)
+
 elf:$(IMAGE).elf
 
 lst:$(IMAGE).lst
@@ -240,3 +244,4 @@ clean-libs:
 	make clean -f $(MAKE_SCRIPT_PATH)/bsp.make
 	make clean -f $(MAKE_SCRIPT_PATH)/freertos.make
 	make clean -f $(MAKE_SCRIPT_PATH)/lwip.make
+	make clean -f $(MAKE_SCRIPT_PATH)/cjson.make

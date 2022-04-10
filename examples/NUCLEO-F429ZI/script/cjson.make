@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (C) 2020 - 2022 Petro Shevchenko <shevchenko.p.i@gmail.com>
+# Copyright (C) 2020 - 2021 Petro Shevchenko <shevchenko.p.i@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,53 +19,23 @@
 
 include config.make
 
-LIB_NAME				:= coapcpp
+LIB_NAME 				:= cjson
 
 CMSIS_PATH				:= $(CUBE_PATH)/Drivers/CMSIS
-HAL_PATH 				:= $(CUBE_PATH)/Drivers/STM32F4xx_HAL_Driver
-RTOS_PATH				:= $(CUBE_PATH)/Middlewares/Third_Party/FreeRTOS/Source
-LWIP_PATH				:= $(CUBE_PATH)/Middlewares/Third_Party/LwIP
-COAPCPP_PATH   			:= $(PROJECT_PATH)/../../..
-
 INCLUDE_PATH			+= $(CMSIS_PATH)/Include
 INCLUDE_PATH			+= $(CMSIS_PATH)/Device/ST/$(MCU_SERIES)/Include
+
+HAL_PATH 				:= $(CUBE_PATH)/Drivers/STM32F4xx_HAL_Driver
 INCLUDE_PATH			+= $(HAL_PATH)/Inc
-INCLUDE_PATH			+= $(COAPCPP_PATH)/api
-INCLUDE_PATH			+= $(COAPCPP_PATH)/src
-INCLUDE_PATH			+= $(COAPCPP_PATH)/src/lwip
 
-INCLUDE_PATH			+= $(RTOS_PATH)
-INCLUDE_PATH			+= $(RTOS_PATH)/include
-INCLUDE_PATH			+= $(RTOS_PATH)/portable/MemMang
-INCLUDE_PATH			+= $(RTOS_PATH)/portable/GCC/ARM_CM4F
-INCLUDE_PATH			+= $(RTOS_PATH)/CMSIS_RTOS_V2
-INCLUDE_PATH			+= $(RTOS_PATH)/CMSIS_RTOS
+INCLUDE_PATH			+= $(CJSON_PATH)
+INCLUDE_PATH 			+= $(PROJECT_PATH)
+VPATH					+= $(CJSON_PATH)
 
-VPATH					+= $(COAPCPP_PATH)/src
-VPATH					+= $(COAPCPP_PATH)/src/lwip
+SRC_CJSON				:= cJSON.c
+SRC_CJSON				+= cJSON_Utils.c
 
-INCLUDE_PATH			+= $(VPATH)
-INCLUDE_PATH			+= $(LWIP_PATH)/src/include
-INCLUDE_PATH			+= $(LWIP_PATH)/src/include/lwip
-INCLUDE_PATH			+= $(LWIP_PATH)/src/include/netif
-INCLUDE_PATH			+= $(LWIP_PATH)/src/include/netif/ppp
-INCLUDE_PATH			+= $(LWIP_PATH)/system
-INCLUDE_PATH			+= $(PROJECT_PATH)
-INCLUDE_PATH			+= $(COAPCPP_PATH)
-INCLUDE_PATH 			+= $(CJSON_PATH)
-
-SRC_COAPCPP				:= base64.cc
-SRC_COAPCPP				+= blockwise.cc
-SRC_COAPCPP				+= core_link.cc
-SRC_COAPCPP				+= error.cc
-SRC_COAPCPP				+= packet.cc
-SRC_COAPCPP				+= senml_json.cc
-SRC_COAPCPP				+= uri.cc
-SRC_COAPCPP				+= utils.cc
-SRC_COAPCPP				+= lwip_dns_resolver.cc
-SRC_COAPCPP				+= lwip_socket.cc
-
-SRC 					:= $(SRC_COAPCPP)
+SRC 					:= $(SRC_CJSON)
 
 OPTIMIZE_LEVEL			:= 2
 DEBUG_LEVEL				:= gdb
@@ -77,8 +47,8 @@ DEFINE 					+= $(BOARD_NAME)
 
 CCFLAGS 				:= -mcpu=cortex-m4
 CCFLAGS 				+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb
-CCFLAGS 				+= -specs=nosys.specs
 #CCFLAGS 				+= -specs=nano.specs
+CCFLAGS 				+= -specs=nosys.specs
 
 CROSS_PREFIX			:= arm-none-eabi-
 
