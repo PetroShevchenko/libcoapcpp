@@ -29,10 +29,19 @@ mkdir -p build
 
 if [ "$TARGET" = "POSIX" ];then 
     if [ "$BUILD_TYPE" = "NATIVE" ];then
+        if [[ $1 = "clean" ]] ; then
+            rm -rf build
+            exit 0
+        fi
         cd build && cmake .. && make -j$(nproc || echo 2)
         mkdir -p examples && cd examples && cmake ../../examples/POSIX && make -j$(nproc || echo 2)
 
     elif [ "$BUILD_TYPE" = "DOCKER" ];then
+        if [[ $1 = "clean" ]] ; then
+            docker container prune -f        # remove all stopped containers
+            docker image rm libcoapcpp-image # remove docker image named libcoapcpp-image
+            exit 0
+        fi
         cd script/docker && docker build -t libcoapcpp-image --rm -f ${DOCKER_FILE} ../..
         docker run --name=coap-container --rm -i -t libcoapcpp-image bash
 
@@ -41,6 +50,10 @@ if [ "$TARGET" = "POSIX" ];then
     fi
 
 elif [ "$TARGET" = "NUCLEO-F429ZI" ] || [ "$TARGET" = "NUCLEO-H743ZI" ];then
+    if [[ $1 = "clean" ]] ; then
+        cd examples/$TARGET && ./build.sh clean
+        exit 0
+    fi
     cd examples/$TARGET && ./build.sh all
 
 elif [ "$TARGET" = "ESP32" ];then

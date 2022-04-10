@@ -1,4 +1,4 @@
-FROM fedora:latest
+FROM fedora:33
 MAINTAINER Petro Shevchenko <shevchenko.p.i@gmail.com>
 RUN dnf update -y
 RUN	dnf install git cmake make automake gcc gcc-c++ -y
