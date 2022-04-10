@@ -8,11 +8,10 @@ namespace Unix
 {
 
 UdpServerConnection::UdpServerConnection(int port, bool version4, std::shared_ptr<Buffer> bufferPtr, std::error_code &ec)
-    : ServerConnection(UDP, port, version4, ec),
+    : ServerConnection(UDP, port, version4, std::move(bufferPtr), ec),
       m_bound{false},
       m_socket{new UnixSocket(version4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0, ec)},
-      m_address{new UnixSocketAddress()},
-      m_bufferPtr{std::move(bufferPtr)}
+      m_address{new UnixSocketAddress()}
 {
     if (ec.value()) return;
     UnixSocketAddress *sa = static_cast<UnixSocketAddress *>(m_address);

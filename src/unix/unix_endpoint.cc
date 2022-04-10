@@ -120,8 +120,7 @@ void ServerEndpoint::receive_request()
 	debug("handler: {}",__func__);
 	m_timeout = 10;
 
-	UdpServerConnection * conn = static_cast<UdpServerConnection *>(this->connection());
-	shared_ptr<Buffer> &bufPtr = conn->bufferPtr();
+	shared_ptr<Buffer> &bufPtr = m_connection->bufferPtr();
 
 	debug("buffer length = {0:d}", bufPtr.get()->length());
 	debug("buffer = {}", bufPtr.get()->data());

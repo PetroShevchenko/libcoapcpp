@@ -1,39 +1,12 @@
 #ifndef _UNIX_UDP_SERVER_H
 #define _UNIX_UDP_SERVER_H
-#include <memory>
-#include <array>
 #include "connection.h"
 #include "unix_socket.h"
 #include "utils.h"
 #include "error.h"
-#include <cstring>
 
 namespace Unix
 {
-
-#define BUFFER_SIZE 1600UL
-
-class Buffer
-{
-public:
-    Buffer(const size_t length)
-    : m_length{length},
-      m_data{new uint8_t [length]}
-    { memset(m_data, 0, length); }
-
-    ~Buffer()
-    { delete [] m_data; }
-
-    size_t length() const
-    { return m_length; }
-
-    uint8_t *data()
-    { return m_data; }
-
-private:
-    const size_t m_length;
-    uint8_t     *m_data;
-};
 
 class UdpServerConnection : public ServerConnection
 {
@@ -76,14 +49,10 @@ public:
     const SocketAddress * address() const
     { return static_cast<const SocketAddress *>(m_address); }
 
-    std::shared_ptr<Buffer> &bufferPtr()
-    { return m_bufferPtr; }
-
 private:
     bool                      m_bound;
     Socket                    *m_socket;
     SocketAddress             *m_address;
-    std::shared_ptr<Buffer>   m_bufferPtr;
 };
 
 } //namespace Unix
