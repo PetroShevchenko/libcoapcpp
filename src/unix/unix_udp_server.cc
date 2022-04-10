@@ -7,12 +7,14 @@ using namespace spdlog;
 namespace Unix
 {
 
-UdpServer::UdpServer(int port, bool version4, std::error_code &ec)
+UdpServerConnection::UdpServerConnection(int port, bool version4, std::shared_ptr<Buffer> bufferPtr, std::error_code &ec)
     : ServerConnection(UDP, port, version4, ec),
       m_bound{false},
-      m_socket{new UnixSocket()},
-      m_address{new UnixSocketAddress()}
+      m_socket{new UnixSocket(version4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0, ec)},
+      m_address{new UnixSocketAddress()},
+      m_bufferPtr{std::move(bufferPtr)}
 {
+    if (ec.value()) return;
     UnixSocketAddress *sa = static_cast<UnixSocketAddress *>(m_address);
     if (version4)
     {
@@ -28,10 +30,20 @@ UdpServer::UdpServer(int port, bool version4, std::error_code &ec)
         sa->address6().sin6_addr = in6addr_any;
         sa->address6().sin6_scope_id = 0;
         sa->address6().sin6_port = htons(port);
-    }        
+    }
+    const int on = 1; // reuse address option
+
+    m_socket->setsockoption(SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int), ec);
+    if (ec.value()) return;
+
+    if (!version4)
+    {
+        const int off = 0; // disable IPv6 only
+        m_socket->setsockoption(IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof(int), ec);
+    }       
 }
 
-void UdpServer::close(std::error_code &ec)
+void UdpServerConnection::close(std::error_code &ec)
 {
     ec.clear();
     m_bound = false;
@@ -48,7 +60,7 @@ void UdpServer::close(std::error_code &ec)
     }
 }
 
-void UdpServer::send(const void * buffer, size_t length, std::error_code &ec)
+void UdpServerConnection::send(const void * buffer, size_t length, std::error_code &ec)
 {
     if (!m_bound)
     {
@@ -65,7 +77,7 @@ void UdpServer::send(const void * buffer, size_t length, std::error_code &ec)
     }
 }
 
-void UdpServer::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
+void UdpServerConnection::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
 {
     if (!m_bound)
     {
@@ -85,7 +97,7 @@ void UdpServer::receive(void * buffer, size_t &length, std::error_code &ec, size
     }
 }
 
-void UdpServer::bind(std::error_code &ec)
+void UdpServerConnection::bind(std::error_code &ec)
 {
     m_socket->bind(m_address, ec);
     if (ec.value())

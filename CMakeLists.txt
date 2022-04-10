@@ -80,9 +80,6 @@ set(
     LIB_SRC_LIST
         ${SRC_DIR}/packet.cc
         ${SRC_DIR}/uri.cc
-        ${SRC_DIR}/endpoint.h
-        ${SRC_DIR}/endpoint.cc
-        ${SRC_DIR}/blockwise.h
         ${SRC_DIR}/blockwise.cc
         ${SRC_DIR}/error.cc
         ${SRC_DIR}/utils.cc
@@ -93,6 +90,7 @@ set(
         ${SRC_DIR}/unix/unix_socket.cc
         ${SRC_DIR}/unix/unix_dns_resolver.cc
         ${SRC_DIR}/unix/unix_connection.cc
+        ${SRC_DIR}/unix/unix_endpoint.cc
         ${SRC_DIR}/unix/unix_udp_client.cc
         ${SRC_DIR}/unix/unix_dtls_client.cc
         ${SRC_DIR}/unix/unix_udp_server.cc

@@ -123,7 +123,7 @@ ServerConnection * create_server_connection(
     switch(type)
     {
         case UDP:
-            return new UdpServer(port, version4, ec);
+            return new UdpServerConnection(port, version4, ec);
 
         case DTLS:
         case TCP:

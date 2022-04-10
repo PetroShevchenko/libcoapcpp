@@ -6,7 +6,8 @@ All examples have been tested on Ubuntu 20.04 LTS
 ## Directory structure
 
 This directory contains the following sub-directories:
-* common 
+* coap-server
+* common
 * dtls-echo-server
 * tcp-client
 * tls-client1

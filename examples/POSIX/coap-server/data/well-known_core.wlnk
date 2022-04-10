@@ -1,0 +1,10 @@
+</sensors>;ct=40;title="Sensor Index",
+</sensors/temp>;rt="temperature-c";if="sensor",
+</sensors/hum>;rt="humidity-%";if="sensor",
+</t>;anchor="/sensors/temp";rel="alternate",
+</h>;anchor="/sensors/hum";rel="alternate",
+<coap://192.168.0.104/sensors/DHT11/t>;anchor="/sensors/temp"
+;rel="describedby",
+<coap://192.168.0.104/sensors/DHT11/h>;anchor="/sensors/hum"
+;rel="describedby",
+</firmware/NUCLEO-F429ZI/v1.0>;rt="firmware";sz=262144
