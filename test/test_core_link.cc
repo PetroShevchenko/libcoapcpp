@@ -75,6 +75,7 @@ TEST(testCoreLink, parseCoreLink)
     "</sensors>;ct=40;title=\"Sensor Index\","\
     "</sensors/temp>;rt=\"temperature-c\";if=\"sensor\","\
     "</sensors/light>;rt=\"light-lux\";if=\"sensor\","\
+	"<coap://192.168.0.104/sensors/DHT11/t>;anchor=\"/sensors/temp\";rel=\"describedby\","\
     "</t>;anchor=\"/sensors/temp\";rel=\"alternate\"";
 
 	parser.parse_core_link(coreLink, ec);

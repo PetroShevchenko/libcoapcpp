@@ -118,17 +118,17 @@ void CoreLink::parse_record(const string &line, std::error_code &ec)
 
 	if (closingBracket == string::npos)	return;
 
-	string::size_type slash = line.find("/", offset + 1);
+	string::size_type slash = line.find("</");
 
 	CoreLinkType record;
 
 	if (slash != string::npos)
 	{
-		record.uri.path(line.substr(slash + 1, closingBracket - slash - 1).c_str());
+		record.uri.path(line.substr(slash + strlen("</"), closingBracket - slash - strlen("</")).c_str());
 	}
 	else
 	{
-		record.uri.path(line.substr(offset + 1, closingBracket - offset - 1).c_str());
+		record.uri.path(line.substr(offset + strlen("<"), closingBracket - offset - strlen("<")).c_str());
 	}
 
 	offset = closingBracket;

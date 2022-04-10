@@ -131,6 +131,10 @@ public:
 	: m_payload{0}, m_coreLink{}
 	{}
 
+	CoreLink(const char *coreLink, std::error_code &ec)
+	: m_payload{0}, m_coreLink{coreLink}
+	{ parse_core_link(coreLink, ec); }
+
 	~CoreLink()
 	{}
 
