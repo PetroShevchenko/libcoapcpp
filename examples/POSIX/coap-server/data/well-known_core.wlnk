@@ -7,4 +7,4 @@
 ;rel="describedby",
 <coap://192.168.0.104/sensors/DHT11/h>;anchor="/sensors/hum"
 ;rel="describedby",
-</firmware/NUCLEO-F429ZI/v1.0>;rt="firmware";sz=262144
+</firmware/NUCLEO-F429ZI/v1.0>;rt="firmware";sz=302816
