@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     set_level(level::debug);
 
     ClientConnection *
-    client = new UdpClient("localhost", 5683, ec);
+    client = new UdpClientConnection("localhost", 5683, ec);
     if (client == nullptr)
     {
         debug("UdpClient(): memory allocation error");

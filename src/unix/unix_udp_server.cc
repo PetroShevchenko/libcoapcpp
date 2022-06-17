@@ -11,7 +11,8 @@ UdpServerConnection::UdpServerConnection(int port, bool version4, std::shared_pt
     : ServerConnection(UDP, port, version4, std::move(bufferPtr), ec),
       m_bound{false},
       m_socket{new UnixSocket(version4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0, ec)},
-      m_address{new UnixSocketAddress()}
+      m_address{new UnixSocketAddress()},
+      m_mutex{}
 {
     if (ec.value()) return;
     UnixSocketAddress *sa = static_cast<UnixSocketAddress *>(m_address);
@@ -44,6 +45,7 @@ UdpServerConnection::UdpServerConnection(int port, bool version4, std::shared_pt
 
 void UdpServerConnection::close(std::error_code &ec)
 {
+    std::lock_guard<std::mutex> lg(m_mutex);
     ec.clear();
     m_bound = false;
 
@@ -56,6 +58,45 @@ void UdpServerConnection::close(std::error_code &ec)
     {
         delete m_address;
         m_address = nullptr;
+    }
+}
+
+void UdpServerConnection::send(const void * buffer, size_t length, const SocketAddress *destAddr, std::error_code &ec)
+{
+    std::lock_guard<std::mutex> lg(m_mutex);
+    if (!m_bound)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_SOCKET_NOT_BOUND);
+        return;
+    }
+    ssize_t sent = m_socket->sendto(buffer, length, destAddr, ec);
+    if (!ec.value())
+    {
+        if (static_cast<size_t>(sent) != length)
+        {
+            ec = make_error_code(CoapStatus::COAP_ERR_INCOMPLETE_SEND);
+        }
+    }
+}
+
+void UdpServerConnection::receive(void * buffer, size_t &length, SocketAddress * srcAddr, std::error_code &ec, size_t seconds)
+{
+    std::lock_guard<std::mutex> lg(m_mutex);
+    if (!m_bound)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_SOCKET_NOT_BOUND);
+        return;
+    }
+    if (seconds)
+    {
+        m_socket->set_timeout(seconds, ec);
+        if(ec.value())
+            return;
+    }
+    ssize_t received = m_socket->recvfrom(ec, buffer, length, srcAddr);
+    if (!ec.value())
+    {
+        length = static_cast<size_t>(received);
     }
 }
 
@@ -98,6 +139,7 @@ void UdpServerConnection::receive(void * buffer, size_t &length, std::error_code
 
 void UdpServerConnection::bind(std::error_code &ec)
 {
+    std::lock_guard<std::mutex> lg(m_mutex);
     m_socket->bind(m_address, ec);
     if (ec.value())
     {

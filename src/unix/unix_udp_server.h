@@ -4,6 +4,7 @@
 #include "unix_socket.h"
 #include "utils.h"
 #include "error.h"
+#include <mutex>
 
 namespace Unix
 {
@@ -23,9 +24,11 @@ public:
 
 public:
     void close(std::error_code &ec) override;
+    void send(const void * buffer, size_t length, const SocketAddress *destAddr, std::error_code &ec) override;
+    void receive(void * buffer, size_t &length, SocketAddress * srcAddr, std::error_code &ec, size_t seconds = 0) override;
+    void bind(std::error_code &ec) override;
     void send(const void * buffer, size_t length, std::error_code &ec) override;
     void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) override;
-    void bind(std::error_code &ec) override;
 
     void listen(std::error_code &ec, int max_connections_in_queue = 1) override
     { 
@@ -53,6 +56,7 @@ private:
     bool                      m_bound;
     Socket                    *m_socket;
     SocketAddress             *m_address;
+    std::mutex                m_mutex;
 };
 
 } //namespace Unix

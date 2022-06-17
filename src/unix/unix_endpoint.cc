@@ -28,6 +28,7 @@ void ClientEndpoint::idle()
 void ClientEndpoint::make_request()
 {
 	debug("handler: {}",__func__);
+	timeout(10);
 	m_nextState = SEND_REQUEST;
 }
 

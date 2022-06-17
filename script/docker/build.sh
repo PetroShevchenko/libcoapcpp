@@ -4,6 +4,7 @@ set -evu
 
 export GTEST_DIR=$(pwd)/third-party/googletest/googletest
 export GMOCK_DIR=$(pwd)/third-party/googletest/googlemock
+export CXX=`which g++-11`
 
 mkdir -p build
 cd build && cmake .. && make -j$(nproc || echo 2)

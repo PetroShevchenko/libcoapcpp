@@ -1,8 +1,14 @@
+#ifndef _UNIX_ENDPOINT_H
+#define _UNIX_ENDPOINT_H
+
 #include "endpoint.h"
 #include "connection.h"
 #include "blockwise.h"
 #include "core_link.h"
 #include "senml_json.h"
+#include <memory>
+#include <atomic>
+#include <mutex>
 
 using namespace coap;
 
@@ -39,7 +45,7 @@ public:
 	  m_packet{},
 	  m_uri{},
 	  m_attempts{0},
-	  m_timeout{0},
+	  m_timeout{10},
 	  m_mid{0},
 	  m_received{false},
 	  m_block2{},
@@ -69,11 +75,17 @@ public:
 	time_t timeout() const
 	{ return m_timeout; }
 
+	void timeout(time_t t)
+	{ m_timeout = t; }
+
 	std::uint16_t mid() const
 	{ return m_mid; }
 
 	bool received() const
 	{ return m_received; }
+
+	void received(bool state)
+	{ m_received = state; }
 
 	const Block2 & block2() const
 	{ return static_cast<const Block2 &>(m_block2); }
@@ -98,7 +110,7 @@ private:
 	ClientConnection *m_connection;		// pointer to the external connection
 	Packet 			 m_packet;			// CoAP packet instance
 	Uri 			 m_uri; 			// destination URI
-	size_t  		 m_attempts;		// quantity of the communication attempts	
+	size_t  		 m_attempts;		// quantity of the communication attempts
 	time_t           m_timeout; 		// receive timeout in seconds
 	std::uint16_t    m_mid;    			// CoAP message identifier
 	bool  			 m_received; 		// received packet flag
@@ -126,9 +138,11 @@ private:
 	void complete();
 
 public:
-	ServerEndpoint(const char *name, ServerConnection *connection)
+	ServerEndpoint(const char *name, ServerConnection * connection)
 	  : Endpoint(name),
 	  m_connection{connection},
+	  m_buffer{connection->bufferPtr().get()->length()},
+	  m_mutex{},
 	  m_coreLink{},
 	  m_senmlJson{},
 	  m_receiving{false},
@@ -147,6 +161,8 @@ public:
 		)
 	  : Endpoint(name),
 	  m_connection{connection},
+	  m_buffer{connection->bufferPtr().get()->length()},
+	  m_mutex{},
 	  m_coreLink{coreLink, ec},
 	  m_senmlJson{},
 	  m_receiving{false},
@@ -166,6 +182,12 @@ public:
 
 	ServerConnection *connection()
 	{ return m_connection; }
+
+	Buffer &buffer()
+	{ return m_buffer; }
+
+	std::mutex &mutex()
+	{ return m_mutex; }
 
 	State currentState() const
 	{ return m_currentState; }
@@ -198,16 +220,20 @@ public:
 	{ m_nextState = COMPLETE; }
 
 private:
-	ServerConnection *m_connection;		// pointer to the external connection	
-	CoreLink 		 m_coreLink;		// CoRE Link payload parser
-	SenmlJson 		 m_senmlJson;		// SenML JSON payload parser
-	bool 			 m_receiving;		// need to receive a packet
-	bool  			 m_sending; 		// need to send a packet
-	bool             m_received; 		// something received to the buffer
-	time_t           m_timeout; 		// receive timeout in seconds
-	State 			 m_currentState; 	// current state of Finite State Automate(FSA)
-	State   		 m_nextState;       // next state of FSA
-	std::error_code  m_ec; 				// error code
+	ServerConnection  *m_connection;	// pointer to the external connection
+	Buffer            m_buffer; 		// internal buffer to parse a request and prepare an answer
+	std::mutex 		  m_mutex; 			// mutex to access to the internal buffer from different threads
+	CoreLink 		  m_coreLink;		// CoRE Link payload parser
+	SenmlJson 		  m_senmlJson;		// SenML JSON payload parser
+	bool 			  m_receiving;		// need to receive a packet
+	bool  			  m_sending; 		// need to send a packet
+	std::atomic<bool> m_received; 		// something received to the buffer
+	time_t            m_timeout; 		// receive timeout in seconds
+	State 			  m_currentState; 	// current state of Finite State Automate(FSA)
+	State   		  m_nextState;      // next state of FSA
+	std::error_code   m_ec; 			// error code
 };
 
 } //namespace Unix
+
+#endif //_UNIX_ENDPOINT_H

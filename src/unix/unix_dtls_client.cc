@@ -18,7 +18,7 @@ using namespace spdlog;
 namespace Unix
 {
 
-void DtlsClient::handshake(std::error_code &ec)
+void DtlsClientConnection::handshake(std::error_code &ec)
 {
     set_level(level::debug);
     /* Initialize wolfSSL */
@@ -83,7 +83,7 @@ void DtlsClient::handshake(std::error_code &ec)
     }
 }
 
-void DtlsClient::connect(std::error_code &ec)
+void DtlsClientConnection::connect(std::error_code &ec)
 {
     m_dns->hostname2address(ec);
     if (ec.value())
@@ -114,7 +114,7 @@ void DtlsClient::connect(std::error_code &ec)
     handshake(ec);
 }
 
-void DtlsClient::close(std::error_code &ec)
+void DtlsClientConnection::close(std::error_code &ec)
 {
     ec.clear();
 
@@ -137,7 +137,7 @@ void DtlsClient::close(std::error_code &ec)
     wolfSSL_Cleanup();
 }
 
-void DtlsClient::send(const void * buffer, size_t length, std::error_code &ec)
+void DtlsClientConnection::send(const void * buffer, size_t length, std::error_code &ec)
 {
     ssize_t sent = wolfSSL_write(m_ssl, buffer, length);
 
@@ -147,7 +147,7 @@ void DtlsClient::send(const void * buffer, size_t length, std::error_code &ec)
     }
 }
 
-void DtlsClient::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
+void DtlsClientConnection::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
 {
     (void)seconds;
     ssize_t received = wolfSSL_read(m_ssl, buffer, length);
@@ -159,6 +159,18 @@ void DtlsClient::receive(void * buffer, size_t &length, std::error_code &ec, siz
     }
 
     length = (size_t)received;
+}
+
+void DtlsClientConnection::send(const void * buffer, size_t length, const SocketAddress *destAddr, std::error_code &ec)
+{
+    (void)destAddr;
+    send(buffer, length, ec);
+}
+
+void DtlsClientConnection::receive(void * buffer, size_t &length, SocketAddress * srcAddr, std::error_code &ec, size_t seconds)
+{
+    (void)srcAddr;
+    receive(buffer, length, ec, seconds);
 }
 
 }// namespace unix

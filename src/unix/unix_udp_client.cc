@@ -7,7 +7,7 @@ using namespace spdlog;
 namespace Unix
 {
 
-void UdpClient::connect(std::error_code &ec)
+void UdpClientConnection::connect(std::error_code &ec)
 {
     m_dns->hostname2address(ec);
     if (ec.value())
@@ -15,7 +15,7 @@ void UdpClient::connect(std::error_code &ec)
         return;
     }
 
-    m_sockAddr = m_dns->create_socket_address(ec);
+    m_address = m_dns->create_socket_address(ec);
     if (ec.value())
     {
         return;
@@ -30,12 +30,12 @@ void UdpClient::connect(std::error_code &ec)
     m_socket = create_socket(type(), m_dns, ec);
     if (ec.value())
     {
-        delete m_sockAddr;
-        m_sockAddr = nullptr;
+        delete m_address;
+        m_address = nullptr;
     }
 }
 
-void UdpClient::close(std::error_code &ec)
+void UdpClientConnection::close(std::error_code &ec)
 {
     ec.clear();
 
@@ -44,21 +44,21 @@ void UdpClient::close(std::error_code &ec)
         delete m_socket;
         m_socket = nullptr;
     }
-    if (m_sockAddr)
+    if (m_address)
     {
-        delete m_sockAddr;
-        m_sockAddr = nullptr;
+        delete m_address;
+        m_address = nullptr;
     }
 }
 
-void UdpClient::send(const void * buffer, size_t length, std::error_code &ec)
+void UdpClientConnection::send(const void * buffer, size_t length, const SocketAddress *destAddr, std::error_code &ec)
 {
     if (m_socket == nullptr)
     {
         ec = make_error_code(CoapStatus::COAP_ERR_NOT_CONNECTED);
         return;
     }
-    ssize_t sent = m_socket->sendto(buffer, length, static_cast<const SocketAddress *>(m_sockAddr), ec);
+    ssize_t sent = m_socket->sendto(buffer, length, destAddr, ec);
     if (!ec.value())
     {
         if (static_cast<size_t>(sent) != length)
@@ -68,7 +68,46 @@ void UdpClient::send(const void * buffer, size_t length, std::error_code &ec)
     }
 }
 
-void UdpClient::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
+void UdpClientConnection::receive(void * buffer, size_t &length, SocketAddress *srcAddr, std::error_code &ec, size_t seconds)
+{
+    if (m_socket == nullptr)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_NOT_CONNECTED);
+        return;
+    }
+
+    if (seconds)
+    {
+        m_socket->set_timeout(seconds, ec);
+        if(ec.value())
+            return;
+    }
+
+    ssize_t received = m_socket->recvfrom(ec, buffer, length, srcAddr);
+    if (!ec.value())
+    {
+        length = static_cast<size_t>(received);
+    }
+}
+
+void UdpClientConnection::send(const void * buffer, size_t length, std::error_code &ec)
+{
+    if (m_socket == nullptr)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_NOT_CONNECTED);
+        return;
+    }
+    ssize_t sent = m_socket->sendto(buffer, length, static_cast<const SocketAddress *>(m_address), ec);
+    if (!ec.value())
+    {
+        if (static_cast<size_t>(sent) != length)
+        {
+            ec = make_error_code(CoapStatus::COAP_ERR_INCOMPLETE_SEND);
+        }
+    }
+}
+
+void UdpClientConnection::receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds)
 {
     if (m_socket == nullptr)
     {

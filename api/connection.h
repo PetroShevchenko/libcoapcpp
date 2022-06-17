@@ -27,21 +27,35 @@ class Buffer
 public:
     Buffer(const size_t length)
     : m_length{length},
+      m_offset{0},
       m_data{new uint8_t [length]}
     { memset(m_data, 0, length); }
 
     ~Buffer()
     { delete [] m_data; }
 
-    Buffer(const Buffer&) = delete;
-    Buffer &operator=(const Buffer&) = delete;
+    Buffer &operator=(const Buffer& other)
+    {
+        if (&other != this)
+        {
+            m_length = other.m_length;
+            m_offset = other.m_offset;
+            if (m_data)
+                delete [] m_data;
+            m_data = new uint8_t [m_length];
+            memcpy(m_data, other.m_data, m_length);
+        }
+        return *this;
+    }
 
     Buffer &operator=(Buffer &&other)
     {
         if (&other != this)
         {
             m_length = 0;
+            m_offset = 0;
             std::swap(m_length, other.m_length);
+            std::swap(m_offset, other.m_offset);
             if (m_data) 
                 delete [] m_data;
             m_data = std::move(other.m_data);
@@ -49,8 +63,15 @@ public:
         return *this;        
     }
 
+    Buffer(const Buffer& other)
+    : m_length{0},
+      m_offset{0},
+      m_data{nullptr}
+    { operator=(other); }
+
     Buffer(Buffer&& other)
     : m_length{0},
+      m_offset{0},
       m_data{nullptr}
     { operator=(std::move(other)); }
 
@@ -60,8 +81,21 @@ public:
     uint8_t *data()
     { return m_data; }
 
+    size_t offset() const
+    { return m_offset; }
+
+    void offset(size_t value)
+    { m_offset = value; }
+
+    void clear()
+    {
+        m_offset = 0;
+        memset(m_data, 0, m_length);
+    }
+
 private:
     size_t      m_length;
+    size_t      m_offset;
     uint8_t     *m_data;
 };
 
@@ -80,8 +114,8 @@ struct Connection
     {}
 
     virtual ~Connection() = default;
-    virtual void send(const void * buffer, size_t length, std::error_code &ec) = 0;
-    virtual void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) = 0;
+    virtual void send(const void * buffer, size_t length, const SocketAddress *destAddr, std::error_code &ec) = 0;
+    virtual void receive(void * buffer, size_t &length, SocketAddress * srcAddr, std::error_code &ec, size_t seconds = 0) = 0;
     virtual void close(std::error_code &ec) = 0;
 
     ConnectionType type() const
@@ -101,14 +135,41 @@ protected:
 
 struct ClientConnection : public Connection
 {
-    ClientConnection(ConnectionType type, const char * hostname, int port, std::error_code &ec)
+    ClientConnection(
+            ConnectionType type,
+            const char * hostname,
+            int port,
+            std::error_code &ec
+        )
         : Connection(type, port, ec),
          m_uri{},
          m_hostname{hostname}
     {}
-
+    ClientConnection(
+            ConnectionType type,
+            const char * hostname,
+            int port,
+            std::shared_ptr<Buffer> bufferPtr,
+            std::error_code &ec
+        )
+        : Connection(type, port, std::move(bufferPtr), ec),
+         m_uri{},
+         m_hostname{hostname}
+    {}
     ClientConnection(const char * uri, std::error_code &ec)
         : Connection(UDP, -1, ec),
+         m_uri{uri},
+         m_hostname{}
+    {
+        if (!uri2connection_type(uri, m_type))
+        { ec = make_system_error(EINVAL); }
+    }
+    ClientConnection(
+            const char * uri,
+            std::shared_ptr<Buffer> bufferPtr,
+            std::error_code &ec
+        )
+        : Connection(UDP, -1, std::move(bufferPtr), ec),
          m_uri{uri},
          m_hostname{}
     {
@@ -118,6 +179,9 @@ struct ClientConnection : public Connection
 
     virtual ~ClientConnection() = default;
     virtual void connect(std::error_code &ec) = 0;
+
+    virtual void send(const void * buffer, size_t length, std::error_code &ec) = 0;
+    virtual void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) = 0;
 
     std::string uri() const
     { return m_uri; }
@@ -150,6 +214,8 @@ struct ServerConnection : public Connection
     virtual void bind(std::error_code &ec) = 0;
     virtual void listen(std::error_code &ec, int max_connections_in_queue = 1) = 0;
     virtual Socket * accept(std::error_code * ec = nullptr) = 0;
+    virtual void send(const void * buffer, size_t length, std::error_code &ec) = 0;
+    virtual void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) = 0;
 
     bool version4() const
     { return m_version4; }

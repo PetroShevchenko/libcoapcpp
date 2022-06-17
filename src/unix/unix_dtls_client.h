@@ -12,10 +12,10 @@
 namespace Unix
 {
 
-class DtlsClient : public ClientConnection
+class DtlsClientConnection : public ClientConnection
 {
 public:
-    DtlsClient(const char * hostname, int port, std::error_code &ec)
+    DtlsClientConnection(const char * hostname, int port, std::error_code &ec)
         : ClientConnection(DTLS,hostname, port, ec),
           m_dns{new UnixDnsResolver(hostname, port)},
           m_socket{new UnixSocket()},
@@ -24,7 +24,7 @@ public:
           m_ssl{nullptr}
     {}
 
-    DtlsClient(const char * uri, std::error_code &ec)
+    DtlsClientConnection(const char * uri, std::error_code &ec)
         : ClientConnection(uri, ec),
           m_dns{new UnixDnsResolver(uri)},
           m_socket{new UnixSocket()},
@@ -33,7 +33,7 @@ public:
           m_ssl{nullptr}
     {}
 
-    ~DtlsClient()
+    ~DtlsClientConnection()
     {
         std::error_code ec;
         close(ec);
@@ -47,6 +47,8 @@ public:
 public:
     void connect(std::error_code &ec) override;
     void close(std::error_code &ec) override;
+    void send(const void * buffer, size_t length, const SocketAddress *destAddr, std::error_code &ec) override;
+    void receive(void * buffer, size_t &length, SocketAddress * srcAddr, std::error_code &ec, size_t seconds = 0) override;
     void send(const void * buffer, size_t length, std::error_code &ec) override;
     void receive(void * buffer, size_t &length, std::error_code &ec, size_t seconds = 0) override;
 

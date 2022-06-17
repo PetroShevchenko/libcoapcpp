@@ -61,10 +61,10 @@ ClientConnection * create_client_connection(
     switch(type)
     {
         case UDP:
-            return new UdpClient(hostname, port, ec);
+            return new UdpClientConnection(hostname, port, ec);
 
         case DTLS:
-            return new DtlsClient(hostname, port, ec);
+            return new DtlsClientConnection(hostname, port, ec);
 
         case TCP:
         case TLS:
@@ -94,10 +94,10 @@ ClientConnection * create_client_connection(
     switch(type)
     {
         case UDP:
-            return new UdpClient(uri, ec);
+            return new UdpClientConnection(uri, ec);
 
         case DTLS:
-            return new DtlsClient(uri, ec);
+            return new DtlsClientConnection(uri, ec);
 
         case TCP:
         case TLS:

@@ -31,7 +31,7 @@ set(
 
 set(
     SRC_LIST
-        ${SRC_DIR}/coap-server.cc
+        ${SRC_DIR}/coap_server.cc
 )
 
 add_executable(
