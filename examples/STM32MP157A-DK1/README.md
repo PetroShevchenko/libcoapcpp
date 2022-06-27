@@ -2,6 +2,7 @@
 
 This directory contains examples to demonstrate using libcoapcpp library on the STM32MP157A-DK1 board.
 
+![plot](STM32MP157A-DK1.jpeg)
 
 ## Introduction
 The STM32MP157A-DK1 board contains two parts:

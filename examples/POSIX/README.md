@@ -3,6 +3,8 @@
 This directory contains examples to demonstrate how to use the libcoapcpp library on the POSIX system.
 All examples have been tested on Ubuntu 20.04 LTS
 
+![plot](POSIX.png)
+
 ## Directory structure
 
 This directory contains the following sub-directories:

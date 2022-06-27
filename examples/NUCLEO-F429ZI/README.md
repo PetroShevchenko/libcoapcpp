@@ -2,6 +2,8 @@
 
 This directory contains examples to demonstrate using libcoapcpp library on NUCLEO-F429ZI board.
 
+![plot](NUCLEO-F429ZI.jpeg)
+
 ## Introduction
 Before using these examples make sure you have installed following packages:
 ~~~
