@@ -3,18 +3,25 @@ cmake_minimum_required (VERSION 3.5)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-set(ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../..)
+set(ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../..)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wshadow -Wno-missing-field-initializers")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -o0 -frtti")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${ROOT_DIR}/build/POSIX/lib")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${ROOT_DIR}/build/STM32MP157A-DK1/lib")
 
 set(SPDLOG_PATH ${ROOT_DIR}/third-party/spdlog)
 set(WOLFSSL_PATH ${ROOT_DIR}/third-party/wolfssl)
+set(CJSON_PATH ${ROOT_DIR}/third-party/cJSON)
+
+install(
+        DIRECTORY "data" 
+        DESTINATION "${ROOT_DIR}/build/STM32MP157A-DK1/examples/bin" 
+        FILES_MATCHING PATTERN "*"
+    )
 
 set(
     PROJECT_NAME
-        "udp-echo-client"
+        "coap-server"
 )
 
 set(
@@ -24,7 +31,7 @@ set(
 
 set(
     SRC_LIST
-        ${SRC_DIR}/udp-echo-client.cc
+        ${SRC_DIR}/coap_server.cc
 )
 
 add_executable(
@@ -41,6 +48,7 @@ target_include_directories(
         ${SPDLOG_PATH}/include
         ${EXAMPLES_PATH}
         ${WOLFSSL_PATH}
+        ${CJSON_PATH}
 )
 
 target_link_libraries(
@@ -49,4 +57,5 @@ target_link_libraries(
         spdlog
         pthread
         wolfssl
+        cjson
 )

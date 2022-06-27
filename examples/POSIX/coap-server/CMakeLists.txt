@@ -7,7 +7,7 @@ set(ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../..)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wshadow -Wno-missing-field-initializers")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -o0 -frtti")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${ROOT_DIR}/build/lib")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${ROOT_DIR}/build/POSIX/lib")
 
 set(SPDLOG_PATH ${ROOT_DIR}/third-party/spdlog)
 set(WOLFSSL_PATH ${ROOT_DIR}/third-party/wolfssl)
@@ -15,7 +15,7 @@ set(CJSON_PATH ${ROOT_DIR}/third-party/cJSON)
 
 install(
         DIRECTORY "data" 
-        DESTINATION "${ROOT_DIR}/build/examples/bin" 
+        DESTINATION "${ROOT_DIR}/build/POSIX/examples/bin" 
         FILES_MATCHING PATTERN "*"
     )
 

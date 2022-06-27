@@ -1,5 +1,5 @@
-#ifndef _SAFE_QUEUE_H
-#define _SAFE_QUEUE_H
+#ifndef _UNIX_SAFE_QUEUE_H
+#define _UNIX_SAFE_QUEUE_H
 #include <mutex>
 #include <queue>
 #include <condition_variable>
@@ -115,6 +115,75 @@ void SafeQueue<T *>::wait_wail_empty()
 
 template <typename T>
 void SafeQueue<T *>::wait_wail_empty_for(size_t seconds)
+{
+    std::unique_lock<std::mutex> ul(m_mutex);
+    if (!m_queue.empty())
+        return;
+    m_cv.wait_for(ul, std::chrono::seconds(seconds), [this]{ return !m_queue.empty(); });
+}
+
+template <typename T>
+void SafeQueue<T>::push(T value)
+{
+    std::unique_lock<std::mutex> ul(m_mutex);
+    m_queue.push(value);
+    ul.unlock();
+    m_cv.notify_one();
+}
+
+template <typename T>
+T SafeQueue<T>::pop()
+{
+    T value;
+    std::unique_lock<std::mutex> ul(m_mutex);
+
+    if (!m_queue.empty())
+    {
+        value = m_queue.front();
+        m_queue.pop();
+    }
+    return value;
+}
+
+template <typename T>
+T SafeQueue<T>::front()
+{
+    T value;
+    std::lock_guard<std::mutex> lg(m_mutex);
+
+    if (!m_queue.empty())
+        value = m_queue.front();
+
+    return value;
+}
+
+template <typename T>
+bool SafeQueue<T>::empty()
+{
+    std::lock_guard<std::mutex> lg(m_mutex);
+    bool state = m_queue.empty();
+    return state;
+}
+
+template <typename T>
+size_t SafeQueue<T>::size()
+{
+    std::lock_guard<std::mutex> lg(m_mutex);
+    size_t size = m_queue.size();
+    return size;
+}
+
+template <typename T>
+void SafeQueue<T>::wait_wail_empty()
+{
+    std::unique_lock<std::mutex> ul(m_mutex);
+    if (!m_queue.empty())
+        return;
+    m_cv.wait(ul, [this]{ return !m_queue.empty(); });
+}
+
+template <typename T>
+void SafeQueue<T>::wait_wail_empty_for(size_t seconds)
 {
     std::unique_lock<std::mutex> ul(m_mutex);
     if (!m_queue.empty())

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TARGET=POSIX
-#TARGET=ESP32
+#TARGET=STM32MP157A-DK1
 #TARGET=NUCLEO-F429ZI
 #TARGET=NUCLEO-H743ZI
 
@@ -30,11 +30,12 @@ mkdir -p build
 if [ "$TARGET" = "POSIX" ];then 
     if [ "$BUILD_TYPE" = "NATIVE" ];then
         if [[ $1 = "clean" ]] ; then
-            rm -rf build
+            rm -rf build/POSIX
             exit 0
         fi
-        cd build && cmake .. && make -j$(nproc || echo 2)
-        mkdir -p examples && cd examples && cmake ../../examples/POSIX && make -j$(nproc || echo 2) install
+        mkdir -p build/POSIX
+        cd build/POSIX && cmake ../.. && make -j$(nproc || echo 2)
+        mkdir -p examples && cd examples && cmake ../../../examples/POSIX && make -j$(nproc || echo 2) install
 
     elif [ "$BUILD_TYPE" = "DOCKER" ];then
         if [[ $1 = "clean" ]] ; then
@@ -49,15 +50,22 @@ if [ "$TARGET" = "POSIX" ];then
         echo "Error : BUILD_TYPE isn't specified"
     fi
 
+elif [ "$TARGET" = "STM32MP157A-DK1" ];then
+        if [[ $1 = "clean" ]] ; then
+            rm -rf build/STM32MP157A-DK1
+            exit 0
+        fi
+        . "/usr/local/oecore-x86_64/environment-setup-cortexa7t2hf-neon-vfpv4-ostl-linux-gnueabi"
+        mkdir -p build/STM32MP157A-DK1
+        cd build/STM32MP157A-DK1 && cmake ../.. && make -j$(nproc || echo 2)
+        mkdir -p examples && cd examples && cmake ../../../examples/STM32MP157A-DK1 && make -j$(nproc || echo 2) install
+
 elif [ "$TARGET" = "NUCLEO-F429ZI" ] || [ "$TARGET" = "NUCLEO-H743ZI" ];then
     if [[ $1 = "clean" ]] ; then
         cd examples/$TARGET && ./build.sh clean
         exit 0
     fi
     cd examples/$TARGET && ./build.sh all
-
-elif [ "$TARGET" = "ESP32" ];then
-    cd examples/$TARGET && ./build.sh
 
 else
     echo "Error: TARGET isn't specified"

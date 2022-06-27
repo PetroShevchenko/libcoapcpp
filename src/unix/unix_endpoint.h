@@ -6,6 +6,7 @@
 #include "blockwise.h"
 #include "core_link.h"
 #include "senml_json.h"
+#include "unix_safe_queue.h"
 #include <memory>
 #include <atomic>
 #include <mutex>
@@ -126,6 +127,7 @@ public:
 	enum State {
 		IDLE = 0,
 		RECEIVE_REQUEST,
+		HANDLE_REQUEST,
 		ERROR,
 		COMPLETE,
 		STATE_QTY
@@ -134,6 +136,7 @@ public:
 private:
 	void idle();
 	void receive_request();
+	void handle_request();
 	void error();
 	void complete();
 
@@ -143,6 +146,7 @@ public:
 	  m_connection{connection},
 	  m_buffer{connection->bufferPtr().get()->length()},
 	  m_mutex{},
+	  m_receiveQueue{},
 	  m_coreLink{},
 	  m_senmlJson{},
 	  m_receiving{false},
@@ -163,6 +167,7 @@ public:
 	  m_connection{connection},
 	  m_buffer{connection->bufferPtr().get()->length()},
 	  m_mutex{},
+	  m_receiveQueue{},
 	  m_coreLink{coreLink, ec},
 	  m_senmlJson{},
 	  m_receiving{false},
@@ -188,6 +193,9 @@ public:
 
 	std::mutex &mutex()
 	{ return m_mutex; }
+
+	SafeQueue<Buffer> &receiveQueue()
+	{ return m_receiveQueue; }
 
 	State currentState() const
 	{ return m_currentState; }
@@ -223,6 +231,7 @@ private:
 	ServerConnection  *m_connection;	// pointer to the external connection
 	Buffer            m_buffer; 		// internal buffer to parse a request and prepare an answer
 	std::mutex 		  m_mutex; 			// mutex to access to the internal buffer from different threads
+	SafeQueue<Buffer> m_receiveQueue;	// incomming message queue 
 	CoreLink 		  m_coreLink;		// CoRE Link payload parser
 	SenmlJson 		  m_senmlJson;		// SenML JSON payload parser
 	bool 			  m_receiving;		// need to receive a packet

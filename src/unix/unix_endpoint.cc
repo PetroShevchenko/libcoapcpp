@@ -112,33 +112,45 @@ void ClientEndpoint::transaction_step(std::error_code &ec)
 void ServerEndpoint::idle()
 {
 	debug("handler: {}",__func__);
-
-	m_nextState = m_currentState = IDLE;
+	m_receiving = false;
+	m_sending = false;
+	m_nextState = IDLE;
 }
 
 void ServerEndpoint::receive_request()
 {
 	debug("handler: {}",__func__);
-	m_timeout = 10;
+	m_timeout = 1;
 
-	shared_ptr<Buffer> &bufPtr = m_connection->bufferPtr();
+	m_receiving = true;
+	m_sending = false;
+	m_nextState = HANDLE_REQUEST;
+}
 
-	debug("buffer length = {0:d}", bufPtr.get()->length());
-	debug("buffer = {}", bufPtr.get()->data());
+void ServerEndpoint::handle_request()
+{
+	debug("handler: {}",__func__);
 
-	m_nextState = m_currentState = RECEIVE_REQUEST;
+	debug("received message length: {0:d}", m_buffer.offset());
+	debug("message : {}", m_buffer.data());
+
+	m_receiving = false;
+	m_sending = false;
+	m_nextState = COMPLETE;
 }
 
 void ServerEndpoint::error()
 {
 	debug("handler: {}",__func__);
 	debug("Error occured: {}", m_ec.message());
+	m_buffer.clear();
 	m_nextState = IDLE;
 }
 
 void ServerEndpoint::complete()
 {
 	debug("handler: {}",__func__);
+	m_buffer.clear();
 	m_nextState = IDLE;
 }
 
@@ -162,6 +174,10 @@ void ServerEndpoint::transaction_step(std::error_code &ec)
 
 		case RECEIVE_REQUEST:
 			receive_request();
+			break;
+
+		case HANDLE_REQUEST:
+			handle_request();
 			break;
 
 		default:

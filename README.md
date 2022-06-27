@@ -55,9 +55,10 @@ following the instructions https://docs.docker.com/get-docker/.
 You can configure your build with script variables:
 * TARGET - select the target platform to be used
 
-Currently, two following platforms are supported:
+Currently, the following platforms are supported:
 * POSIX
 * NUCLEO-F429ZI
+* STM32MP157A-DK1
 
 The following options are available only if TARGET=POSIX:
 * BUILD_TYPE - select build in host system (NATIVE) or docker container(DOCKER)
