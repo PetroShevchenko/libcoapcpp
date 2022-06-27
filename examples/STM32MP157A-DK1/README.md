@@ -6,21 +6,21 @@ This directory contains examples to demonstrate using libcoapcpp library on the 
 
 ## Introduction
 The STM32MP157A-DK1 board contains two parts:
-* two Cortex-A8 cores
+* two Cortex-A7 cores
 * one Cortex-M4 core
 
-The Cortex-A8 part is intended to use an Embedded Linux.
+The Cortex-A7 part is intended to use an Embedded Linux.
 The Cortex-M4 part can be used in the ordenary way as a microcontroller with lots of periphery.
 Interconnection between these two parts can be realised using a virtual COM port.
 
 The examples contain source files for both parts.
 
 ## Toolchain
-There are two toolchains, one is for the Cortex-A8 part and the other is for the Cortex-M4 one.
+There are two toolchains, one is for the Cortex-A7 part and the other is for the Cortex-M4 one.
 
 
 ### STM32MP1 OpenSTLinux Developer Package
-<p>To compile examples for the Cortex-A8 part the STM32MP1 OpenSTLinux Developer Package is used.</p>
+<p>To compile examples for the Cortex-A7 part the STM32MP1 OpenSTLinux Developer Package is used.</p>
 <ol>
 <li>Download the developer package by visiting the following resource https://www.st.com/en/embedded-software/stm32mp1dev.html.</li>
 <li>Unpack the downloaded archive file en.SDK-x86_64-stm32mp1-openstlinux-5.10-dunfell-mp1-21-11-17_tar.xz.</li>
