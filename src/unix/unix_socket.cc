@@ -52,6 +52,22 @@ void UnixSocketAddress::address6(const void *value, size_t len, error_code &ec)
     memcpy(&m_address6, value, len);
 }
 
+const char * UnixSocketAddress::addr2str(const UnixSocketAddress *addr)
+{
+    static char str[64];
+    memset(str, 0, sizeof(str));
+    switch(addr->type())
+    {
+        case SOCKET_TYPE_IP_V4:
+            return inet_ntop(AF_INET, &addr->address4().sin_addr, str, 64);
+        case SOCKET_TYPE_IP_V6:
+            return inet_ntop(AF_INET6, &addr->address6().sin6_addr, str, 64);
+        default:
+            break;
+    }
+    return nullptr;
+}
+
 UnixSocket::UnixSocket(
                 int domain,
                 int type,

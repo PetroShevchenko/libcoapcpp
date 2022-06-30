@@ -59,6 +59,9 @@ public:
     void address4(const void *value, size_t len, std::error_code &ec);
     void address6(const void *value, size_t len, std::error_code &ec);
 
+public:
+    static const char * addr2str(const UnixSocketAddress *addr);
+
 private:
     struct sockaddr_in m_address4;
     struct sockaddr_in6 m_address6;

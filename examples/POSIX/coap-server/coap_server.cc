@@ -447,10 +447,12 @@ void CoapServer::receive(error_code &ec)
     // copy recived data to the incomming queue of the apropriate client
     client->receiveQueue().push(*connection->bufferPtr());
 
-    const sockaddr_in * addr = &((reinterpret_cast<const UnixSocketAddress *>(client->m_clientAddress))->address4());
-    const struct in_addr  * sin_addr = &addr->sin_addr;
+    const UnixSocketAddress * addr = reinterpret_cast<const UnixSocketAddress *>(client->m_clientAddress);
 
-    debug("Client IP address: {0:d}", sin_addr->s_addr);
+    debug("addr->type() = {0:d}", addr->type());
+
+    const char * ip = UnixSocketAddress::addr2str(addr);
+    debug("Client IP address: {}", ip);
 
     client->received(true);
 }
@@ -498,7 +500,7 @@ void CoapServer::processing(ConnectedClient* client)
             //TODO send a message from the internal buffer
         }
 
-#if 0
+#if 1
         client->timeout(10);// to debug
 
         if (client->timeout())
