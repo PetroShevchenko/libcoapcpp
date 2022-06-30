@@ -109,7 +109,6 @@ void UnixDnsResolver::hostname2address(std::error_code &ec)
 
 SocketAddress * UnixDnsResolver::create_socket_address(std::error_code &ec)
 {
-    struct in_addr * inp;
     SocketAddress *sap = nullptr;
 
     if(m_port == -1)
@@ -121,15 +120,17 @@ SocketAddress * UnixDnsResolver::create_socket_address(std::error_code &ec)
     if (m_address6.size())
     {
         struct sockaddr_in6 sa;
+        struct in6_addr * inp;
         sa.sin6_family = AF_INET6;
         sa.sin6_port = htons(m_port);
-        inp = reinterpret_cast<in_addr *>(&sa.sin6_addr.s6_addr);
-        inet_aton(m_address6.c_str(), inp);
+        inp = reinterpret_cast<in6_addr *>(&sa.sin6_addr.s6_addr);
+        inet_pton(AF_INET6, m_address6.c_str(), inp);
         sap = new UnixSocketAddress(sa);
     }
     else if (m_address4.size())
     {
         struct sockaddr_in sa;
+        struct in_addr * inp;
         sa.sin_family = AF_INET;
         sa.sin_port = htons(m_port);
         inp = reinterpret_cast<in_addr *>(&sa.sin_addr.s_addr);
