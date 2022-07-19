@@ -34,13 +34,14 @@ Look at the log, extract the message with assigned IP address:
 
 Another way to communicate with the builtin UDP server is using a UDP client,
 written in Python.
-The UDP client is located in the NUCLEO-F429ZI/util directory under the name udp-client.py.  
+The UDP client is located in the utilities directory under the name udp-client.py.  
 
 Launch udp-client.py:
 ~~~
-$ cd libcoapcpp/examples/NUCLEO-F429ZI/util
-$ ./udp-client.py <IP asssigned to the board> 5555
+$ cd ~/libcoapcpp/utilities
+$ ./udp-client.py -a <IP asssigned to the board> -p 5555
 ~~~
+GUI mode of the UDP client can be used, please read README.md file for more details which is located in the libcoapcpp/utilities directory.
 * Note: Make sure bosh UDP server and client are located in the same network.
 
 ## Check command line interface (CLI)
