@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TARGET=POSIX
+#TARGET=RASPBERRY-PI
 #TARGET=STM32MP157A-DK1
 #TARGET=NUCLEO-F429ZI
 #TARGET=NUCLEO-H743ZI
@@ -49,6 +50,15 @@ if [ "$TARGET" = "POSIX" ];then
     else
         echo "Error : BUILD_TYPE isn't specified"
     fi
+
+elif [ "$TARGET" = "RASPBERRY-PI" ];then
+        if [[ $1 = "clean" ]] ; then
+            rm -rf "build/RASPBERRY-PI"
+            exit 0
+        fi
+        mkdir -p "build/RASPBERRY-PI"
+        cd "build/RASPBERRY-PI" && cmake ../.. && make -j$(nproc || echo 2)
+        mkdir -p examples && cd examples && cmake "../../../examples/RASPBERRY-PI" && make -j$(nproc || echo 2)
 
 elif [ "$TARGET" = "STM32MP157A-DK1" ];then
         if [[ $1 = "clean" ]] ; then
