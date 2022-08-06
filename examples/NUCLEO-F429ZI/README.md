@@ -11,12 +11,18 @@ $ sudo apt install make python3 minicom openocd gdb-multiarch -y
 ~~~
 * Note: Here is provided information to install packages for Ubuntu, use the similar packages if you use another Unix-like system
 
-Also make sure the directory libcoapcpp/third-party/STM32CubeF4 isn't empty.
-If not, install all third party libraries (it requires at least 5 Gb disk space):
+Make sure the directory libcoapcpp/third-party isn't empty.
+If not, install all required third-party libraries that are supplied as sub-modules:
 ~~~
 $ cd libcoapcpp/third-party
 $ git submodule init
 $ git submodule update
+~~~
+
+The STM32CubeF4 library must be installed manually:
+~~~
+$ cd libcoapcpp/third-party
+$ git clone https://github.com/STMicroelectronics/STM32CubeF4.git
 ~~~
 
 You should install arm-none-eabi-gcc/g++ cross-compilator, arm-none-eabi-gdb or gdb-multiarch debugger to debug the firmware,

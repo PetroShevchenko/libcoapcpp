@@ -14,17 +14,22 @@ libcoapcpp supports the features described in the following RFCs:
 ## Introduction
 libcoapcpp is a library that can be linked from your own source code.
 This implementation also includes several examples of using the library.
-libcoapcpp uses the following third party libraries:
+libcoapcpp uses the following third-party libraries:
 * googletest
 * spdlog
 * mbedtls
 * wolfssl
-* STM32CubeF4
-* STM32CubeH7
 * cJSON
 
+Individual examples for different hardwares require additional third-party libraries to be installed:
+* STM32CubeF4
+* STM32CubeH7
+* STM32CubeMP1
+* STM32MP1 OpenSTLinux Developer Package
+* Raspberry Pi Pico C/C++ SDK
+
 ## Requirements
-Your computer must have at least 5.0 Gbytes of free disk space to be able to download all third party libraries. 
+Your computer must have at least 10.0 Gbytes of free disk space to be able to download all third party libraries. 
 
 To build the library, use the following utilities:
 * cmake >= 3.5
@@ -57,6 +62,7 @@ You can configure your build with script variables:
 
 Currently, the following platforms are supported:
 * POSIX
+* RASPBERRY-PI
 * NUCLEO-F429ZI
 * STM32MP157A-DK1
 
