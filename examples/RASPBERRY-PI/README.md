@@ -225,34 +225,34 @@ There are used the following pins to connect the Pico to the Raspberry Pi 400:
 <td>-</td>
 </tr>
 <tr>
-<td>12</td>
-<td>GPIO18(SPI1 CE0)</td>
-<td>SPI0 CSn</td>
-<td>7</td>
-</tr>
-<tr>
-<td>35</td>
-<td>GPIO19(SPI1 MISO)</td>
+<td>19</td>
+<td>GPIO10(SPI0 MOSI)</td>
 <td>SPI0 RX</td>
 <td>6</td>
 </tr>
 <tr>
-<td>38</td>
-<td>GPIO20(SPI1 MOSI)</td>
+<td>21</td>
+<td>GPIO9(SPI0 MISO)</td>
 <td>SPI0 TX</td>
 <td>5</td>
+</tr>
+<tr>
+<td>23</td>
+<td>GPIO11(SPI0 SCLK)</td>
+<td>SPI0 SCK</td>
+<td>4</td>
+</tr>
+<tr>
+<td>24</td>
+<td>GPIO8(SPI0 CE0)</td>
+<td>SPI0 CSn</td>
+<td>7</td>
 </tr>
 <tr>
 <td>39</td>
 <td>GND</td>
 <td>GND</td>
 <td>8</td>
-</tr>
-<tr>
-<td>40</td>
-<td>GPIO21(SPI1 SCLK)</td>
-<td>SPI0 SCK</td>
-<td>4</td>
 </tr>
 </table>
 
