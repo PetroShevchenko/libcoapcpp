@@ -1,7 +1,7 @@
 #include "udp_server.h"
-#include "command.h"
 #include "error.h"
 #include "log.h"
+#include "pico_protocol.h"
 
 #include <iostream>
 #include <string>
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
     }
     debug("OK");
 
-    server.set_received_packed_handler_callback(static_cast<ReceivedPacketHandlerCallback>(command_handler));
+    server.set_received_packed_handler_callback(static_cast<ReceivedPacketHandlerCallback>(Pico::transfer));
 
     debug("Server is launching...");
     server.start();

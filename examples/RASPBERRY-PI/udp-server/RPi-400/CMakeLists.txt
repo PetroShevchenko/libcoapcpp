@@ -31,7 +31,8 @@ set(
     SRC_LIST
         ${SRC_DIR}/udp_server.cc
         ${SRC_DIR}/main.cc
-        ${SRC_DIR}/command.cc
+        ${SRC_DIR}/spi.cc
+        ${SRC_DIR}/pico_protocol.cc
 )
 
 add_executable(
