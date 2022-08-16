@@ -4,6 +4,10 @@ The first mentioned above device is a full-featured Linux computer, that can be 
 
 All provided here POSIX examples can be compiled and launched on the Raspberry Pi 400 due to this is actually a POSIX system.
 Provided under the RASPBERRY-PI target name examples are related to working two devices (RPi-400 and RPi-Pico) together.
+<p>
+Since the Raspberry Pi Pico has recently got a new modification with a WLAN module, there is become possible to use the Raspberry Pi Pico W for independent connection to a computer network via Wi-Fi.
+In this case there is no need to provide interconnection beetwen the RPi-400 and the RPi-Pico-W for their joint work, but anyway you can use the RPi-400 to develop, upgrade and debug a RPi-Pico-W firmware.
+</p>
 
 * Note: You can use the Raspberry Pi 4 Model B instead of the Raspberry Pi 400.  
 
@@ -160,7 +164,13 @@ The Raspberry Pi Pico pinout is shown on the following figure:
 
 ![plot](doc/RPI_PICO_PINOUT.png)
 
-### Wiring table
+### Raspberry Pi Pico W pinout
+
+The Raspberry Pi Pico W (with WLAN) pinout is shown on the next figure:
+
+![plot](doc/RPI_PICO_W_PINOUT.png)
+
+### Wiring table (Raspberry Pi Pico)
 There are used the following pins to connect the Pico to the Raspberry Pi 400:
 
 <table>
@@ -181,6 +191,12 @@ There are used the following pins to connect the Pico to the Raspberry Pi 400:
 <td>5V</td>
 <td>VSYS</td>
 <td>39</td>
+</tr>
+<tr>
+<td>5</td>
+<td>GPIO3</td>
+<td>RUN</td>
+<td>30</td>
 </tr>
 <tr>
 <td>6</td>
@@ -253,6 +269,76 @@ There are used the following pins to connect the Pico to the Raspberry Pi 400:
 <td>GND</td>
 <td>GND</td>
 <td>8</td>
+</tr>
+</table>
+
+### Wiring table (Raspberry Pi Pico W)
+
+<p>
+Since the Raspberry Pi Pico W has an own network interface, there is no need to provide an interconnection between the devices while they are running, except for debugging.
+Thus, the wiring table became simpler:
+</p>
+
+<table>
+<tr>
+<th>Raspberry Pi 400</th>
+<th></th>
+<th>Raspberry Pi Pico W</th>
+<th></th>
+</tr>
+<tr>
+<td>Pin</td>
+<td>Name</td>
+<td>Name</td>
+<td>Pin</td>
+</tr>
+<tr>
+<td>2</td>
+<td>5V</td>
+<td>VSYS</td>
+<td>39</td>
+</tr>
+<tr>
+<td>6</td>
+<td>GND</td>
+<td>GND</td>
+<td>38</td>
+</tr>
+<tr>
+<td>8</td>
+<td>GPIO14(TXD)</td>
+<td>UART0_RX</td>
+<td>2</td>
+</tr>
+<tr>
+<td>9</td>
+<td>GND</td>
+<td>GND</td>
+<td>3</td>
+</tr>
+<tr>
+<td>10</td>
+<td>GPIO15(RXD)</td>
+<td>UART0_TX</td>
+<td>1</td>
+</tr>
+<td>18</td>
+<td>GPIO24(SWDIO)</td>
+<td>DEBUG SWDIO</td>
+<td>-</td>
+</tr>
+<tr>
+<td>22</td>
+<td>GPIO25(SWCLK)</td>
+<td>DEBUG SWCLK</td>
+<td>-</td>
+</tr>
+<tr>
+<tr>
+<td>25</td>
+<td>GND</td>
+<td>DEBUG GND</td>
+<td>-</td>
 </tr>
 </table>
 
