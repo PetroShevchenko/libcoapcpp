@@ -87,13 +87,6 @@ set(
         ${SRC_DIR}/core_link.cc
         ${SRC_DIR}/senml_json.cc
         ${SRC_DIR}/base64.cc
-        ${SRC_DIR}/unix/unix_socket.cc
-        ${SRC_DIR}/unix/unix_dns_resolver.cc
-        ${SRC_DIR}/unix/unix_connection.cc
-        ${SRC_DIR}/unix/unix_endpoint.cc
-        ${SRC_DIR}/unix/unix_udp_client.cc
-        ${SRC_DIR}/unix/unix_dtls_client.cc
-        ${SRC_DIR}/unix/unix_udp_server.cc
 )
 
 add_library(
@@ -143,8 +136,6 @@ set(
        ${INC_DIR}/packet.h
        ${TEST_DIR}/test_packet.cc
        ${TEST_DIR}/test_uri.cc
-       ${TEST_DIR}/test_dns_resolver.cc
-       ${TEST_DIR}/test_socket.cc
        ${TEST_DIR}/test_blockwise.cc
        ${TEST_DIR}/test_common.cc
        ${TEST_DIR}/test_senml_json.cc
