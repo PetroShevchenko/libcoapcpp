@@ -200,7 +200,10 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
         opt.clear();
     }
 
-    payload_offset(offset + sizeof(PAYLOAD_MARKER));
+    if (offset < size && buf[offset] == PAYLOAD_MARKER)
+        payload_offset(offset + sizeof(PAYLOAD_MARKER));
+    else
+        payload_offset(0); // there is no any payload
 }
 
 void Packet::parse_payload(const void * buffer, size_t size, std::error_code &ec)
@@ -257,7 +260,8 @@ void Packet::parse(const void * buffer, size_t size, std::error_code &ec)
     parse_options(buffer, size, ec);
     if (ec) return;
 
-    parse_payload(buffer, size, ec);
+    if (payload_offset())
+        parse_payload(buffer, size, ec);
 }
 
 void Packet::add_option(
