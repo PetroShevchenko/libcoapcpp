@@ -36,7 +36,7 @@ if [ "$TARGET" = "POSIX" ];then
         fi
         mkdir -p build/POSIX
         cd build/POSIX && cmake ../.. && make -j$(nproc || echo 2)
-        #mkdir -p examples && cd examples && cmake ../../../examples/POSIX && make -j$(nproc || echo 2) install
+        mkdir -p examples && cd examples && cmake ../../../examples/POSIX && make -j$(nproc || echo 2) install
 
     elif [ "$BUILD_TYPE" = "DOCKER" ];then
         if [[ $1 = "clean" ]] ; then
