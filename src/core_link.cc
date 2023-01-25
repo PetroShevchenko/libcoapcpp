@@ -166,4 +166,15 @@ void CoreLink::parse_record(const string &line, std::error_code &ec)
 	ec.clear();
 }
 
+namespace core_link
+{
+
+bool is_root(const char *line)
+{ return !strcmp(root, line); }
+
+bool is_root(std::string &line)
+{ return is_root(line.c_str()); }
+
+}
+
 }// namespace coap

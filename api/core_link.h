@@ -165,6 +165,11 @@ private:
 	std::string m_coreLink;
 };
 
+namespace core_link
+{
+bool is_root(const char *line);
+bool is_root(std::string &line);
+}
 /*
 TODO use Uri class to convert data from Uri to CoRE-Link format 
 and vise versa.
