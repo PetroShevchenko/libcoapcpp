@@ -2,7 +2,7 @@
 #define _ERROR_H
 #include <system_error>
 
-enum class CoapStatus
+enum CoapStatus
 {
     COAP_OK = 0,
     COAP_ERR_OPTION_NUMBER,
@@ -10,6 +10,7 @@ enum class CoapStatus
     COAP_ERR_TOKEN_LENGTH,
     COAP_ERR_OPTION_DELTA,
     COAP_ERR_OPTION_LENGTH,
+    COAP_ERR_OPTION_VALUE,
     COAP_ERR_URI_PATH,
     COAP_ERR_BUFFER_SIZE,
     COAP_ERR_CREATE_SOCKET,
@@ -27,6 +28,7 @@ enum class CoapStatus
     COAP_ERR_URI_NOT_FOUND,
     COAP_ERR_SERVER_CODE,
     COAP_ERR_DECODE_BLOCK_OPTION,
+    COAP_ERR_ENCODE_BLOCK_OPTION,
     COAP_ERR_SOCKET_DOMAIN,
     COAP_ERR_MEMORY_ALLOCATE,
     COAP_ERR_NOT_IMPLEMENTED,
@@ -42,6 +44,7 @@ enum class CoapStatus
     COAP_ERR_NO_JSON_FIELD,
     COAP_ERR_CREATE_CORE_LINK,
     COAP_ERR_PARSE_CORE_LINK,
+    COAP_ERR_BAD_REQUEST,
 };
 
 namespace std

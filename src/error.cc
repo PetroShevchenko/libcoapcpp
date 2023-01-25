@@ -35,6 +35,9 @@ std::string CoapErrorCategory::message(int ev) const
         case CoapStatus::COAP_ERR_OPTION_LENGTH:
             return "Too long the option length";
 
+        case CoapStatus::COAP_ERR_OPTION_VALUE:
+            return "Wrong option value";
+
         case CoapStatus::COAP_ERR_URI_PATH:
             return "Wrong URI path use something like /0/1 or /first/second";
 
@@ -86,6 +89,9 @@ std::string CoapErrorCategory::message(int ev) const
         case CoapStatus::COAP_ERR_DECODE_BLOCK_OPTION:
             return "Unable to decode block-wise option";
 
+        case CoapStatus::COAP_ERR_ENCODE_BLOCK_OPTION:
+            return "Unable to encode block-wise option";
+
         case CoapStatus::COAP_ERR_SOCKET_DOMAIN:
             return "Unsupported socket domain";
 
@@ -130,6 +136,9 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_PARSE_CORE_LINK:
             return "Failed to parse CoRe-Link content";
+
+        case CoapStatus::COAP_ERR_BAD_REQUEST:
+            return "4.00 Bad Request";
     }
     return "Unknown error";
 }
