@@ -299,14 +299,7 @@ TEST(testPacket, makeRequest)
 
 #ifdef PRINT_TESTED_VALUES
     info("Prepared request:");
-    info("version : {0:d}", packet.version());
-    info("type : {0:d}", packet.type());
-    info("token length : {0:d}", packet.token_length());
-    info("code : {0:d}",packet.code_as_byte());
-    info("identity: {0:d}", packet.identity());
-    info("token :");
-    fmt::print("{:02x}", fmt::join(packet.token(), ", "));
-    fmt::print("\n");
+    print_packet(packet);
 #endif
 
     ASSERT_EQ(packet.token_length(), TOKEN_MAX_LENGTH);
@@ -344,14 +337,7 @@ TEST(testPacket, prepareAnswer)
 
 #ifdef PRINT_TESTED_VALUES
     info("Prepared answer:");
-    info("version : {0:d}", packet.version());
-    info("type : {0:d}", packet.type());
-    info("token length : {0:d}", packet.token_length());
-    info("code : {0:d}",packet.code_as_byte());
-    info("identity: {0:d}", packet.identity());
-    info("token :");
-    fmt::print("{:02x}", fmt::join(packet.token(), ", "));
-    fmt::print("\n");
+    print_packet(packet);
 #endif
 
     ASSERT_EQ(packet.token_length(), TOKEN_MAX_LENGTH);
@@ -443,6 +429,46 @@ TEST(testPacket, DataType)
 
     ASSERT_TRUE(r == 0);
     ASSERT_TRUE(data.value.type == DataType::TYPE_STRING);
+}
+
+TEST(testPacket, clear)
+{
+    error_code ec;
+
+    Packet packet;
+
+    create_testOptions(packet, ec);
+
+    ASSERT_TRUE(!ec.value());
+
+    uint16_t id = generate_identity();
+
+    packet.make_request(ec, CONFIRMABLE, POST, id, &testCoapPacket[51], 110);
+
+    ASSERT_TRUE(!ec.value());
+
+#ifdef PRINT_TESTED_VALUES
+    info("Before cleaning:");
+    print_packet(packet);
+#endif
+
+    packet.clear();
+
+#ifdef PRINT_TESTED_VALUES
+    info("After cleaning:");
+    print_packet(packet);
+#endif
+
+    ASSERT_EQ(packet.header_as_byte(), 0);
+    ASSERT_EQ(packet.code_as_byte(), 0);
+    ASSERT_EQ(packet.identity(), 0);
+    ASSERT_EQ(packet.token_length(), 0);
+    for (size_t i = 0; i < TOKEN_MAX_LENGTH; ++i)
+    {
+        ASSERT_EQ(packet.token()[i], 0);
+    }
+    ASSERT_EQ(packet.options().empty(), true);
+    ASSERT_EQ(packet.payload().empty(), true);
 }
 
 int main(int argc, char ** argv)

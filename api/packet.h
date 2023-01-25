@@ -181,6 +181,8 @@ struct Message
 
     bool generate_token(const std::size_t len = TOKEN_MAX_LENGTH);
 
+    void clear();
+
 private:
     Header          m_header;
     Code            m_code;

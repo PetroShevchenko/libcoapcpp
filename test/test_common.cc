@@ -42,26 +42,32 @@ void print_packet(const Packet & packet)
     info("Packet :");
     info("version : {0:d}", packet.version());
     info("token length : {0:d}", packet.token_length());
-    info("token :");
-    fmt::print("0x{:02x}", fmt::join(packet.token(), ", "));
-    fmt::print("\n");
+    if (packet.token_length())
+    {
+        info("token :");
+        fmt::print("0x{:02x}", fmt::join(packet.token(), ", "));
+        fmt::print("\n");
+    }
     info("type : {0:d}", packet.type());
     info("code : {0:d}", packet.code_as_byte());
     info("code detail : {0:d}", packet.code_detail());
     info("code class : {0:d}", packet.code_class());
     info("message id : {0:d}", packet.identity());
     print_options(packet);
-    info("payload size: {0:d}", packet.payload().size());
     size_t size = packet.payload().size();
-    info("payload : ");
-    for (size_t i = 0; i < size; i++)
+    info("payload size: {0:d}", size);
+    if (size)
     {
-        fmt::print("0x{:02x}", packet.payload()[i]);
-        fmt::print(" ,");
-        if (i != 0 && (i + 1) % 16 == 0)
-            fmt::print("\n");
+        info("payload : ");
+        for (size_t i = 0; i < size; i++)
+        {
+            fmt::print("0x{:02x}", packet.payload()[i]);
+            fmt::print(" ,");
+            if (i != 0 && (i + 1) % 16 == 0)
+                fmt::print("\n");
+        }
+        fmt::print("\n");
     }
-    fmt::print("\n");
 }
 
 void print_serialized_packet(const void *data, size_t size)

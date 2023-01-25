@@ -1,13 +1,23 @@
 #include "packet.h"
-//#include "spdlog/spdlog.h"
+#ifdef USE_SPDLOG
+#include "spdlog/spdlog.h"
+#endif
 #include <cstdlib>
 #include <climits>
 #include <cassert>
 #include <cstring>
 #include <ctime>
+#include <algorithm>
+
+#ifndef USE_SPDLOG
+#define set_level(level)
+#define debug(...)
+#endif
 
 using namespace std;
-//using namespace spdlog;
+#ifdef USE_SPDLOG
+using namespace spdlog;
+#endif
 
 namespace coap
 {
@@ -33,6 +43,17 @@ bool Message::generate_token(const std::size_t len)
     token_length(len);
 
     return true;
+}
+
+void Message::clear()
+{
+    header_as_byte(0);
+    code_as_byte(0);
+    identity(0);
+    fill_n(token().begin(), TOKEN_MAX_LENGTH, 0);
+    options().clear();
+    payload_offset(0);
+    payload().clear();
 }
 
 void Packet::parse_header(const void * buffer, size_t size, error_code &ec)
