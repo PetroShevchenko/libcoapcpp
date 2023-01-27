@@ -32,7 +32,7 @@ set(
 set(
     SRC_LIST
         ${SRC_DIR}/main.cc
-        ${SRC_DIR}/coap_server.cc
+        ${COMMON_DIR}/coap_server.cc
 )
 
 add_executable(
@@ -49,6 +49,7 @@ target_include_directories(
         ${EXAMPLES_PATH}
         ${WOLFSSL_PATH}
         ${CJSON_PATH}
+        ${COMMON_DIR}
 )
 
 target_link_libraries(
