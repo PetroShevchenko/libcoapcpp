@@ -169,6 +169,13 @@ namespace core_link
 {
 bool is_root(const char *line);
 bool is_root(std::string &line);
+
+bool is_record_matched(std::string &line, const CoreLinkType &record);
+bool is_attribute_matched(const char *name, const char *value, const CoreLinkParameter &a);
+bool is_attribute_matched(const char *name, unsigned long value, const CoreLinkParameter &a);
+
+std::vector<CoreLinkParameter>::const_iterator
+	find_attribute(const char *name, const CoreLinkType &record);
 }
 /*
 TODO use Uri class to convert data from Uri to CoRE-Link format 

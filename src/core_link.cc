@@ -175,6 +175,38 @@ bool is_root(const char *line)
 bool is_root(std::string &line)
 { return is_root(line.c_str()); }
 
+bool is_record_matched(std::string &line, const CoreLinkType &record)
+{ return !strcmp(line.c_str(), record.uri.path().c_str()); }
+
+bool is_attribute_matched(const char *name, const char *value, const CoreLinkParameter &a)
+{
+	if (a.value.type == CoreLinkParameter::STRING
+		&& !strcmp(name, a.name.c_str())
+		&& !strcmp(value, a.value.asString.c_str()))
+		return true;
+	return false;
 }
+
+bool is_attribute_matched(const char *name, unsigned long value, const CoreLinkParameter &a)
+{
+	if (a.value.type == CoreLinkParameter::NUMBER
+		&& !strcmp(name, a.name.c_str())
+		&& value == a.value.asNumber)
+		return true;
+	return false;
+}
+
+std::vector<CoreLinkParameter>::const_iterator
+find_attribute(const char *name, const CoreLinkType &record)
+{
+	vector<CoreLinkParameter>::const_iterator iter, end;
+    for (iter = record.parameters.begin(),
+         end = record.parameters.end(); iter != end; ++iter)
+    	if (!strcmp(name, iter->name.c_str()))
+    		return iter;
+    return end;
+}
+
+}//namespace core_link
 
 }// namespace coap

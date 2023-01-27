@@ -89,6 +89,8 @@ set(
         ${SRC_DIR}/base64.cc
 )
 
+add_definitions(-DUSE_SPDLOG)
+
 add_library(
     ${LIB_PROJECT_NAME} STATIC
         ${LIB_SRC_LIST}
@@ -102,12 +104,12 @@ target_include_directories(
         ${WOLFSSL_PATH}
 )
 
-target_compile_definitions(
-    ${LIB_PROJECT_NAME} PRIVATE
-        USE_SPDLOG
-        USE_CREATE_SERVER_CONNECTION
-        USE_CREATE_CLIENT_CONNECTION
-)
+#target_compile_definitions(
+#    ${LIB_PROJECT_NAME} PRIVATE
+#        USE_SPDLOG
+#        USE_CREATE_SERVER_CONNECTION
+#        USE_CREATE_CLIENT_CONNECTION
+#)
 
 #target_compile_options(
 #    ${LIB_PROJECT_NAME} PRIVATE
