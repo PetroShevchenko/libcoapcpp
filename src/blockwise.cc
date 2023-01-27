@@ -1,11 +1,11 @@
+#include "blockwise.h"
+#include "consts.h"
 #include <cmath>
 #include <cassert>
 #include <cstdint>
 #ifdef USE_SPDLOG
 #include "spdlog/spdlog.h"
 #endif
-#include "blockwise.h"
-#include "consts.h"
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 #include <arpa/inet.h>
 #else
@@ -145,7 +145,28 @@ bool Blockwise::decode_size_option(const Option &opt)
 
     return true;
 }
-
+/*****************************************************************
+ *  Note: refer RFC7959 for more details
+ *
+ *          0
+ *          0 1 2 3 4 5 6 7
+ *         +-+-+-+-+-+-+-+-+
+ *         |  NUM  |M| SZX |
+ *         +-+-+-+-+-+-+-+-+
+ *
+ *          0                   1
+ *          0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *         |          NUM          |M| SZX |
+ *         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ *          0                   1                   2
+ *          0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
+ *         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *         |                   NUM                 |M| SZX |
+ *         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ *****************************************************************/
 bool Blockwise::encode_block_option(BlockType type, Option &opt)
 {
     set_level(level::debug);
@@ -189,21 +210,23 @@ bool Blockwise::encode_block_option(BlockType type, Option &opt)
     {
         if (m_littleEndian)
         {
-            tmp = static_cast<uint8_t>(m_number & 0xFF);
+            tmp = static_cast<uint8_t>((m_number >> 16) & 0xFF) << BLOCK_NUM_SHIFT;
+            tmp |= static_cast<uint8_t>((m_number >> 8) & 0xFF) >> BLOCK_NUM_SHIFT;//Little endian
             opt.value().push_back(tmp);
-            tmp = static_cast<uint8_t>((m_number >> 8) & 0xFF) >> BLOCK_NUM_SHIFT;
-            tmp |= static_cast<uint8_t>((m_number >> 16) & 0xFF) << BLOCK_NUM_SHIFT;//Little endian
+            tmp = static_cast<uint8_t>((m_number >> 8) & 0xFF) << BLOCK_NUM_SHIFT;
+            tmp |= static_cast<uint8_t>(m_number & 0xFF) >> BLOCK_NUM_SHIFT;
             opt.value().push_back(tmp);
-            tmp = static_cast<uint8_t>((m_number >> 8) & 0xF) << BLOCK_NUM_SHIFT;
+            tmp = static_cast<uint8_t>(m_number & 0xF) << BLOCK_NUM_SHIFT;
         }
         else
         {
-            tmp = static_cast<uint8_t>((m_number >> 24) & 0xFF);
+            tmp = static_cast<uint8_t>((m_number >> 8) & 0xFF) << BLOCK_NUM_SHIFT;
+            tmp |= static_cast<uint8_t>((m_number >> 16) & 0xFF) >> BLOCK_NUM_SHIFT;//Big endian
             opt.value().push_back(tmp);
-            tmp = static_cast<uint8_t>((m_number >> 16) & 0xFF) >> BLOCK_NUM_SHIFT;
-            tmp |= static_cast<uint8_t>((m_number >> 8) & 0xFF) << BLOCK_NUM_SHIFT;//Big endian
+            tmp = static_cast<uint8_t>((m_number >> 16) & 0xFF) << BLOCK_NUM_SHIFT;
+            tmp |= static_cast<uint8_t>((m_number >> 24) & 0xFF) >> BLOCK_NUM_SHIFT;
             opt.value().push_back(tmp);
-            tmp = static_cast<uint8_t>((m_number >> 16) & 0xF) << BLOCK_NUM_SHIFT;
+            tmp = static_cast<uint8_t>((m_number >> 24) & 0xF) << BLOCK_NUM_SHIFT;
         }
     }
     else
@@ -211,7 +234,6 @@ bool Blockwise::encode_block_option(BlockType type, Option &opt)
         debug("Invalid block number value");
         return false;
     }
-
     tmp |= static_cast<uint8_t>(sizeOpt) & BLOCK_SZX_MASK;
     if (m_more)
     { tmp |= static_cast<uint8_t>(1 << BLOCK_M_BIT); }
