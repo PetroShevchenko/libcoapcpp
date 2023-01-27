@@ -45,6 +45,7 @@ enum CoapStatus
     COAP_ERR_CREATE_CORE_LINK,
     COAP_ERR_PARSE_CORE_LINK,
     COAP_ERR_BAD_REQUEST,
+    COAP_ERR_NOT_FOUND,
 };
 
 namespace std

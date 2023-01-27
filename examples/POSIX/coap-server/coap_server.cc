@@ -4,11 +4,13 @@
 #include <iostream>
 #include <cstdint>
 #include <arpa/inet.h>
+#include <fstream>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 
 using namespace spdlog;
 using namespace coap;
+using namespace std;
 
 namespace posix
 {
@@ -159,9 +161,12 @@ void CoapServer::handle_get_request()
     }
     else
     {
-        m_ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
-        EXIT_TRACE();
-        return;
+        process_uri_path(path, m_ec);
+        if (m_ec.value())
+        {
+            EXIT_TRACE();
+            return;            
+        }
     }
     EXIT_TRACE();
 }
@@ -387,6 +392,157 @@ void CoapServer::prepare_content_response(
         return;
     }
     serialize_response(ec);
+    EXIT_TRACE();
+}
+
+void CoapServer::prepare_content_response(
+            std::error_code &ec,
+            MediaType contentFormat,
+            const char *filename
+        )
+{
+    ENTER_TRACE();
+
+    ifstream ifs(filename, ios::binary);
+    if (!ifs.is_open())
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_NOT_FOUND);
+        EXIT_TRACE();
+        return;        
+    }
+    size_t fileSize;
+    ifs.seekg(0, std::ios::end);
+    fileSize = ifs.tellg();
+    ifs.seekg(0);
+
+    Block2 block2;
+    bool status = block2.get_header(m_packet, &ec);// check if the packet contains a BLOCK_2 option
+    if (ec.value())
+    {
+        ifs.close();
+        EXIT_TRACE();
+        return;
+    }
+
+    if (!status && fileSize > 1024) // check if there is no BLOCK_2 option and the file size is greater than 1024
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_BAD_REQUEST);
+        ifs.close();
+        EXIT_TRACE();
+        return;        
+    }
+    std::array<char, 1024> payload;
+    size_t payloadLength;
+
+    if (status) // there is a BLOCK_2 option in the packet
+    {
+        TRACE("BLOCK2 number = ", block2.number(), "\n");
+        TRACE("BLOCK2 offset = ", block2.offset(), "\n");
+        TRACE("BLOCK2 size = ", block2.size(), "\n");
+
+        block2.total(fileSize);
+        ifs.seekg(block2.offset());
+
+        TRACE("BLOCK2 total = ", block2.total(), "\n");
+        if (block2.size() < (block2.total() - block2.offset()))// if there is required to fragment the packet
+        {
+            block2.more(true);
+            payloadLength = block2.size();
+        }
+        else 
+        {
+            block2.more(false);
+            payloadLength = block2.total() - block2.offset();
+        }
+        ifs.read(&payload[0], payloadLength);
+        ifs.close();
+
+        TRACE("BLOCK2 more = ", block2.more(), "\n");
+        TRACE("BLOCK2 payload length = ", payloadLength, "\n");
+
+        m_packet.options().clear(); // clear all options
+
+        Option option;
+
+        if (!block2.encode_block_option(option))
+        {
+            ec = make_error_code(CoapStatus::COAP_ERR_ENCODE_BLOCK_OPTION);
+            EXIT_TRACE();
+            return;
+        }
+        m_packet.options().push_back(option);
+    }
+    else 
+    {
+        m_packet.options().clear(); // clear all options
+        payloadLength = fileSize;
+    } 
+
+    uint8_t value[sizeof(MediaType)] = {0,};
+    size_t optionSize = hton_content_format(ec, contentFormat, value);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    TRACE("contentFormat = ", contentFormat, "\n");
+    TRACE("optionSize = ", optionSize, "\n");
+
+    m_packet.add_option(CONTENT_FORMAT, value, optionSize, ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    m_packet.prepare_answer(ec, ACKNOWLEDGEMENT, CONTENT, m_packet.identity(), payload.data(), payloadLength);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    serialize_response(ec);
+    EXIT_TRACE();
+}
+
+void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
+{
+    ENTER_TRACE();
+
+    if (path[0] == '/')
+        path.erase(0,1);
+    if(path.back() == '/')
+        path.pop_back();
+    TRACE("path = ", path.c_str(), "\n");
+
+    CoreLink parser;
+    parser.parse_core_link(m_coreLink.c_str(), ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    for (vector<CoreLinkType>::const_iterator
+            iter = parser.payload().begin(),
+            end = parser.payload().end(); iter != end; ++iter)
+    {
+        if (core_link::is_record_matched(path, *iter))
+        {
+            std::vector<CoreLinkParameter>::const_iterator attribute_iterator;
+            attribute_iterator = core_link::find_attribute("rt", *iter);
+            if (attribute_iterator != iter->parameters.end()
+                && core_link::is_attribute_matched("rt", "firmware", *attribute_iterator))
+            {
+                path = "data/" + path;
+                prepare_content_response(ec, OCTET_STREAM, path.c_str());
+                EXIT_TRACE();
+                return;
+            }
+            // TODO prepare Core-Link payload 
+        }
+    }
+    //XXX
+    ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
+    // TODO prepare Core-Link payload
     EXIT_TRACE();
 }
 

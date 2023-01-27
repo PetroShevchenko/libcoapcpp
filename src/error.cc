@@ -139,6 +139,9 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_BAD_REQUEST:
             return "4.00 Bad Request";
+
+        case CoapStatus::COAP_ERR_NOT_FOUND:
+            return "4.04 Not Found";
     }
     return "Unknown error";
 }
