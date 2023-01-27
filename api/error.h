@@ -46,6 +46,7 @@ enum CoapStatus
     COAP_ERR_PARSE_CORE_LINK,
     COAP_ERR_BAD_REQUEST,
     COAP_ERR_NOT_FOUND,
+    COAP_ERR_METHOD_NOT_ALLOWED,
 };
 
 namespace std

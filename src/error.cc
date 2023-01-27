@@ -142,6 +142,9 @@ std::string CoapErrorCategory::message(int ev) const
 
         case CoapStatus::COAP_ERR_NOT_FOUND:
             return "4.04 Not Found";
+
+        case CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED:
+            return "4.05 Method Not Allowed";
     }
     return "Unknown error";
 }

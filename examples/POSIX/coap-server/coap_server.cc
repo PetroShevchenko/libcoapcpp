@@ -174,6 +174,7 @@ void CoapServer::handle_get_request()
 void CoapServer::handle_post_request()
 {
     ENTER_TRACE();
+    m_ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
     m_fsaState = FSA_STATE_DONE;
     EXIT_TRACE();
 }
@@ -181,6 +182,7 @@ void CoapServer::handle_post_request()
 void CoapServer::handle_put_request()
 {
     ENTER_TRACE();
+    m_ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
     m_fsaState = FSA_STATE_DONE;
     EXIT_TRACE();
 }
@@ -188,6 +190,7 @@ void CoapServer::handle_put_request()
 void CoapServer::handle_delete_request()
 {
     ENTER_TRACE();
+    m_ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
     m_fsaState = FSA_STATE_DONE;
     EXIT_TRACE();
 }
