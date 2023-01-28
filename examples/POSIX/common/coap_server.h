@@ -77,6 +77,8 @@ private:
     void prepare_content_response(std::error_code &ec, coap::MediaType contentFormat, const void *data, size_t size);
     void prepare_content_response(std::error_code &ec, coap::MediaType contentFormat, const char *filename);    
     void process_uri_path(std::string &path, std::error_code &ec);
+    void add_content_format_option(coap::MediaType contentFormat, std::error_code &ec);
+    void process_block2_option(coap::Block2 &block2, size_t totalSize, size_t &payloadLength, std::error_code &ec);
 
 public:
     void processing(Buffer &buf);

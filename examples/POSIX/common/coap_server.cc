@@ -232,6 +232,8 @@ MessageCode CoapServer::make_protocol_error_code(std::error_code &ec)
         return BAD_REQUEST;
     case CoapStatus::COAP_ERR_NOT_IMPLEMENTED:
         return NOT_IMPLEMENTED;
+    case CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED:
+        return METHOD_NOT_ALLOWED;
     default:
         return INTERNAL_SERVER_ERROR;
     }
@@ -319,59 +321,9 @@ void CoapServer::prepare_error_response(std::error_code &ec)
     EXIT_TRACE();
 }
 
-void CoapServer::prepare_content_response(
-            std::error_code &ec,
-            MediaType contentFormat,
-            const void *data,
-            size_t size
-        )
+void CoapServer::add_content_format_option(MediaType contentFormat, std::error_code &ec)
 {
     ENTER_TRACE();
-    Block2 block2;
-    bool status = block2.get_header(m_packet, &ec);// check if the packet contains a BLOCK_2 option
-    if (ec.value())
-    {
-        EXIT_TRACE();
-        return;
-    }
-    const uint8_t *payload = static_cast<const uint8_t *>(data);
-    size_t payloadLength = size; 
-    if (status) // there is a BLOCK_2 option in the packet
-    {
-        TRACE("BLOCK2 number = ", block2.number(), "\n");
-        TRACE("BLOCK2 offset = ", block2.offset(), "\n");
-        TRACE("BLOCK2 size = ", block2.size(), "\n");
-
-        block2.total(size);
-        payload += block2.offset();
-        TRACE("BLOCK2 total = ", block2.total(), "\n");
-        if (block2.size() < (block2.total() - block2.offset()))// if there is required to fragment the packet
-        {
-            block2.more(true);
-            payloadLength = block2.size();
-        }
-        else 
-        {
-            block2.more(false);
-            payloadLength = block2.total() - block2.offset();
-        }
-        TRACE("BLOCK2 more = ", block2.more(), "\n");
-        TRACE("BLOCK2 payload length = ", payloadLength, "\n");
-
-        m_packet.options().clear(); // clear all options
-
-        Option option;
-
-        if (!block2.encode_block_option(option))
-        {
-            ec = make_error_code(CoapStatus::COAP_ERR_ENCODE_BLOCK_OPTION);
-            EXIT_TRACE();
-            return;
-        }
-        m_packet.options().push_back(option);
-    }
-    else m_packet.options().clear(); // clear all options
-
     uint8_t value[sizeof(MediaType)] = {0,};
     size_t optionSize = hton_content_format(ec, contentFormat, value);
     if (ec.value())
@@ -381,8 +333,89 @@ void CoapServer::prepare_content_response(
     }
     TRACE("contentFormat = ", contentFormat, "\n");
     TRACE("optionSize = ", optionSize, "\n");
-
     m_packet.add_option(CONTENT_FORMAT, value, optionSize, ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    EXIT_TRACE();
+}
+
+void CoapServer::process_block2_option(Block2 &block2, size_t totalSize, size_t &payloadLength, std::error_code &ec)
+{
+    ENTER_TRACE();
+    TRACE("BLOCK2 number = ", block2.number(), "\n");
+    TRACE("BLOCK2 offset = ", block2.offset(), "\n");
+    TRACE("BLOCK2 size = ", block2.size(), "\n");
+
+    block2.total(totalSize);
+
+    TRACE("BLOCK2 total = ", block2.total(), "\n");
+    if (block2.size() < (block2.total() - block2.offset()))// if there is required to fragment the packet
+    {
+        block2.more(true);
+        payloadLength = block2.size();
+    }
+    else
+    {
+        block2.more(false);
+        payloadLength = block2.total() - block2.offset();
+    }
+    TRACE("BLOCK2 more = ", block2.more(), "\n");
+    TRACE("BLOCK2 payload length = ", payloadLength, "\n");
+
+    m_packet.options().clear(); // clear all options
+
+    Option option;
+
+    if (!block2.encode_block_option(option))
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_ENCODE_BLOCK_OPTION);
+        EXIT_TRACE();
+        return;
+    }
+    m_packet.options().push_back(option);
+    EXIT_TRACE();
+}
+
+void CoapServer::prepare_content_response(
+            std::error_code &ec,
+            MediaType contentFormat,
+            const void *data,
+            size_t size
+        )
+{
+    ENTER_TRACE();
+    Block2 block2;
+    bool status = block2.get_header(m_packet, &ec);// extract BLOCK_2 option from the incoming packet
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+
+    const uint8_t *payload = static_cast<const uint8_t *>(data);
+    size_t payloadLength;
+
+    if (status) // there is BLOCK_2 option in the incomming packet
+    {
+        payload += block2.offset();
+
+        process_block2_option(block2, size, payloadLength, ec);
+        if (ec.value())
+        {
+            EXIT_TRACE();
+            return;
+        }
+    }
+    else
+    {
+        payloadLength = size;
+        m_packet.options().clear(); // clear all options
+    }
+
+    add_content_format_option(contentFormat, ec);
     if (ec.value())
     {
         EXIT_TRACE();
@@ -405,7 +438,6 @@ void CoapServer::prepare_content_response(
         )
 {
     ENTER_TRACE();
-
     ifstream ifs(filename, ios::binary);
     if (!ifs.is_open())
     {
@@ -413,13 +445,13 @@ void CoapServer::prepare_content_response(
         EXIT_TRACE();
         return;        
     }
-    size_t fileSize;
-    ifs.seekg(0, std::ios::end);
-    fileSize = ifs.tellg();
-    ifs.seekg(0);
 
+    ifs.seekg(0, std::ios::end);
+    size_t fileSize = ifs.tellg();
+    ifs.seekg(0);
     Block2 block2;
-    bool status = block2.get_header(m_packet, &ec);// check if the packet contains a BLOCK_2 option
+
+    bool status = block2.get_header(m_packet, &ec);// extract BLOCK_2 option from the incoming packet
     if (ec.value())
     {
         ifs.close();
@@ -427,71 +459,39 @@ void CoapServer::prepare_content_response(
         return;
     }
 
-    if (!status && fileSize > 1024) // check if there is no BLOCK_2 option and the file size is greater than 1024
+    if (!status && fileSize > 1024) // if there is no BLOCK_2 option the file size must be up to 1024 bytes
     {
         ec = make_error_code(CoapStatus::COAP_ERR_BAD_REQUEST);
         ifs.close();
         EXIT_TRACE();
         return;        
     }
+
     std::array<char, 1024> payload;
     size_t payloadLength;
 
-    if (status) // there is a BLOCK_2 option in the packet
+    if (status) // there is BLOCK_2 option in the incomming packet
     {
-        TRACE("BLOCK2 number = ", block2.number(), "\n");
-        TRACE("BLOCK2 offset = ", block2.offset(), "\n");
-        TRACE("BLOCK2 size = ", block2.size(), "\n");
-
-        block2.total(fileSize);
         ifs.seekg(block2.offset());
 
-        TRACE("BLOCK2 total = ", block2.total(), "\n");
-        if (block2.size() < (block2.total() - block2.offset()))// if there is required to fragment the packet
+        process_block2_option(block2, fileSize, payloadLength, ec);
+        if (ec.value())
         {
-            block2.more(true);
-            payloadLength = block2.size();
-        }
-        else 
-        {
-            block2.more(false);
-            payloadLength = block2.total() - block2.offset();
-        }
-        ifs.read(&payload[0], payloadLength);
-        ifs.close();
-
-        TRACE("BLOCK2 more = ", block2.more(), "\n");
-        TRACE("BLOCK2 payload length = ", payloadLength, "\n");
-
-        m_packet.options().clear(); // clear all options
-
-        Option option;
-
-        if (!block2.encode_block_option(option))
-        {
-            ec = make_error_code(CoapStatus::COAP_ERR_ENCODE_BLOCK_OPTION);
             EXIT_TRACE();
+            ifs.close();
             return;
         }
-        m_packet.options().push_back(option);
     }
-    else 
+    else
     {
         m_packet.options().clear(); // clear all options
         payloadLength = fileSize;
-    } 
-
-    uint8_t value[sizeof(MediaType)] = {0,};
-    size_t optionSize = hton_content_format(ec, contentFormat, value);
-    if (ec.value())
-    {
-        EXIT_TRACE();
-        return;
     }
-    TRACE("contentFormat = ", contentFormat, "\n");
-    TRACE("optionSize = ", optionSize, "\n");
 
-    m_packet.add_option(CONTENT_FORMAT, value, optionSize, ec);
+    ifs.read(&payload[0], payloadLength);
+    ifs.close();
+
+    add_content_format_option(contentFormat, ec);
     if (ec.value())
     {
         EXIT_TRACE();
