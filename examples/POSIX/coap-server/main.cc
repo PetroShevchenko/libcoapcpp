@@ -69,7 +69,7 @@ static bool parse_arguments(int argc, char ** argv, CommandLineOptions &options)
 
     options.port = 5683;
     options.useIPv4 = false;
-    set_level(level::debug);
+    set_level(level::info);
     while(true)
     {
         int option_index = 0;// getopt_long stores the option index here
@@ -92,7 +92,7 @@ static bool parse_arguments(int argc, char ** argv, CommandLineOptions &options)
             case 'p':
                 options.port = (int)strtol(optarg, &endptr, 10);
                 if (options.port <= 0) {
-                    debug("Error: Unable to convert --port {} option value to port number", optarg);
+                    error("Error: Unable to convert --port {} option value to port number", optarg);
                     return false;
                 }
                 break;
@@ -130,7 +130,7 @@ static void signal_handler(int signo)
 {
     if (signo == SIGINT)
     {
-        debug("SIGINT cought");
+        info("SIGINT cought");
         g_terminate = true;
     }
 }
@@ -174,7 +174,7 @@ static void initialize_connection(bool useIPv4, uint16_t portnum, UdpConnectionT
 
 int main(int argc, char **argv)
 {
-    set_level(level::debug);
+    set_level(level::info);
 
     if (argc == 1)
     {
@@ -187,21 +187,19 @@ int main(int argc, char **argv)
     {
         exit(EXIT_FAILURE);
     }
-    debug("port: {0:d}", options.port);
-    debug("use IPv4: {}", options.useIPv4);
 
     string coreLinkContent;
 
     if (!read_core_link_content(g_contentPath, coreLinkContent))
     {
-        debug("read_core_link_content() failed");
+        error("read_core_link_content() failed");
         exit(EXIT_FAILURE);        
     }
-    debug("core link content:\n{}", coreLinkContent.c_str());
+    info("{} has been read", g_contentPath);
 
     if (signal(SIGINT, signal_handler) == SIG_ERR)
     {
-        debug("Unable to set SIGINT handler");
+        error("Unable to set SIGINT handler");
         exit(EXIT_FAILURE);
     }
 
@@ -210,7 +208,7 @@ int main(int argc, char **argv)
 	initialize_connection(options.useIPv4, options.port, g_connection, ec);
 	if (ec.value())
 	{
-		debug("{}", ec.message());
+		error("{}", ec.message());
 		return EXIT_FAILURE;
 	}
 
@@ -233,7 +231,7 @@ int main(int argc, char **argv)
     CoapServer server("CoAP Server", coreLinkContent.c_str());
     server.timeout(60);
     server.start();
-    debug("CoAP server has been started");
+    info("CoAP server has been started");
 
     int status;
     fd_set rd;
@@ -253,12 +251,12 @@ int main(int argc, char **argv)
         status = select(FD_SETSIZE, &rd, NULL, NULL, &tv);
         if (status == -1)
         {
-            debug("select() error, errno = {0:d}", errno);
+            error("select() error, errno = {0:d}", errno);
             break;
         }
         else if (status)
         {
-            ssize_t received;
+            ssize_t received, sent;
 
             if (FD_ISSET(sock, &rd))
             {
@@ -266,19 +264,22 @@ int main(int argc, char **argv)
                 received = recvfrom(sock, buf.data(), buf.length(), MSG_DONTWAIT, client_addr, (socklen_t *)&addr_len);
                 if (received > 0)
                 {
+                    info("<-- {0:d} bytes received", received);
                     buf.offset(received);
                     server.processing(buf);
-                    if (sendto(sock, buf.data(), buf.offset(),  MSG_DONTWAIT, (const struct sockaddr *)client_addr, addr_len) == -1)
-                        debug("sendto() returned -1");
+                    if ((sent = sendto(sock, buf.data(), buf.offset(),  MSG_DONTWAIT, (const struct sockaddr *)client_addr, addr_len)) == -1)
+                        error("sendto() returned -1");
+                    else
+                        info("--> {0:d} bytes sent", sent);
                 }
             }
         }
         else
         {
-            debug("No data within {0:d} seconds.", (int)timeout);
+            info("No data within {0:d} seconds.", (int)timeout);
         }
     }
     close(sock);
-    debug("CoAP server has terminated");
+    info("CoAP server has terminated");
     exit(EXIT_SUCCESS);
 }

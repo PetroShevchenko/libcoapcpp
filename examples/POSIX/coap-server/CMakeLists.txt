@@ -33,7 +33,11 @@ set(
     SRC_LIST
         ${SRC_DIR}/main.cc
         ${COMMON_DIR}/coap_server.cc
+        ${COMMON_DIR}/trace.h
+        ${COMMON_DIR}/coap_server.h
 )
+
+add_definitions(-DTRACE_CODE)
 
 add_executable(
     ${PROJECT_NAME}

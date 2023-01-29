@@ -1,12 +1,14 @@
 #include "coap_server.h"
 #include "trace.h"
 #include "core_link.h"
+#include "utils.h"
 #include <iostream>
 #include <cstdint>
 #include <arpa/inet.h>
 #include <fstream>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 using namespace spdlog;
 using namespace coap;
@@ -60,6 +62,63 @@ void CoapServer::done(void *data)
     ((CoapServer *)data)->done();
 }
 
+enum MessageDirection {
+    INCOMMING,
+    OUTGOING
+};
+
+static const char *coap_options_to_string(coap::Packet &packet)
+{
+    static string line;
+    line.clear();
+    for(auto opt: packet.options())
+    {
+        line += coap_option_number_to_string(static_cast<OptionNumber>(opt.number()));
+        line += " ";
+    }
+    return line.c_str();
+}
+
+static void log_packet(MessageDirection direction, coap::Packet &packet)
+{
+    string line;
+    line = (direction == INCOMMING) ? "<-- " : "--> ";
+    line += "CoAP message: Type: {}; Code: {}; MID: {}; Token({})";
+    line += packet.token_length() ? ": {:n}" : "{}";
+    line += "; Options({}): ";
+    line += coap_options_to_string(packet);
+    info(line.c_str(),
+            coap_message_type_to_string(static_cast<MessageType>(packet.type())),
+            coap_message_code_to_string(static_cast<MessageCode>(packet.code_as_byte())),
+            (int)packet.identity(),
+            packet.token_length(),
+            packet.token_length() ? to_hex(packet.token().begin(), packet.token().end()): to_hex(packet.token().begin(), packet.token().begin()),
+            packet.options().size()
+        );
+}
+
+#ifdef TRACE_CODE
+#define TRACE_PACKET(packet) do{\
+    TRACE("COAP message: Type: ", coap_message_type_to_string(static_cast<MessageType>(packet.type())),\
+             "; Code: ", coap_message_code_to_string(static_cast<MessageCode>(packet.code_as_byte())),\
+             "; MID: ", (int)packet.identity(),\
+             "; Token(", (int)packet.token_length(), ")\n");\
+    if (packet.token_length()) {\
+        TRACE("Token content:\n");\
+        TRACE_ARRAY(packet.token());\
+    }\
+    if (packet.options().size()) {\
+        TRACE("Options(", (int)packet.options().size(), "): ", coap_options_to_string(packet), "\n");\
+    }\
+    if (packet.payload().size()) {\
+        TRACE("Payload content:\n");\
+        TRACE_ARRAY(packet.payload());\
+    }\
+}while(0)
+#else
+#define TRACE_PACKET(packet)
+#endif
+
 void CoapServer::parse_incomming_coap_packet()
 {
     ENTER_TRACE();
@@ -71,17 +130,9 @@ void CoapServer::parse_incomming_coap_packet()
         EXIT_TRACE();
         return;     
     }
-    TRACE("COAP Version: ", (int)m_packet.version(), "\n");
-    TRACE("Message Type: ", (int)m_packet.type(), "\n");
-    TRACE("Token length: ", (int)m_packet.token_length(), "\n");
-    if (m_packet.token_length())
-    {
-        TRACE("Token:\n");
-        TRACE_ARRAY(m_packet.token());
-    }
-    TRACE("Message Code: 0x", std::hex, (int)m_packet.code_as_byte(), "\n");
-    TRACE("Message Id: ", std::dec, (int)m_packet.identity(), "\n");
-    TRACE("Options: ", (int)m_packet.options().size(), "\n");
+
+    log_packet(INCOMMING, m_packet);
+    TRACE_PACKET(m_packet);
 
     switch (m_packet.code_as_byte())
     {
@@ -201,7 +252,7 @@ void CoapServer::done()
     m_processing = false;
     if (m_ec.value())
     {
-        debug("Error: {}", m_ec.message());
+        error("Error: {}", m_ec.message());
         prepare_error_response(m_ec);
     }
     EXIT_TRACE();
@@ -209,7 +260,7 @@ void CoapServer::done()
 
 void CoapServer::processing(Buffer &buf)
 {
-    set_level(level::debug);
+    set_level(level::info);
 
     m_fsaState = FSA_STATE_DEFAULT;
     m_processing = true;
@@ -251,21 +302,21 @@ size_t CoapServer::hton_content_format(
     if (contentFormat <= UINT8_MAX)
     {
         uint16_t cf = htons(static_cast<uint16_t>(contentFormat));
-        TRACE("cf = ", cf, "\n");
+        TRACE("cf: ", cf, "\n");
         out[0] = cf >> 8;
         optionSize = sizeof(uint8_t);
     }
     else if (contentFormat <= UINT16_MAX)
     {
         uint16_t cf = htons(static_cast<uint16_t>(contentFormat));
-        TRACE("cf = ", cf, "\n");
+        TRACE("cf: ", cf, "\n");
         memcpy(&out[0], &cf, sizeof(uint16_t));        
         optionSize = sizeof(uint16_t);
     }
     else if (contentFormat <= UINT32_MAX)
     {
         uint32_t cf = htonl(static_cast<uint32_t>(contentFormat));
-        TRACE("cf = ", cf, "\n");
+        TRACE("cf: ", cf, "\n");
         memcpy(&out[0], &cf, sizeof(uint32_t));
         optionSize = sizeof(uint32_t);        
     }
@@ -310,6 +361,9 @@ void CoapServer::prepare_acknowledge_response(std::error_code &ec, MessageCode r
         EXIT_TRACE();
         return;
     }
+    log_packet(OUTGOING, m_packet);
+    TRACE_PACKET(m_packet);
+
     serialize_response(ec);
     EXIT_TRACE();
 }
@@ -331,8 +385,8 @@ void CoapServer::add_content_format_option(MediaType contentFormat, std::error_c
         EXIT_TRACE();
         return;
     }
-    TRACE("contentFormat = ", contentFormat, "\n");
-    TRACE("optionSize = ", optionSize, "\n");
+    TRACE("Content Format: ", contentFormat, "\n");
+    TRACE("Option Size: ", optionSize, "\n");
     m_packet.add_option(CONTENT_FORMAT, value, optionSize, ec);
     if (ec.value())
     {
@@ -345,13 +399,9 @@ void CoapServer::add_content_format_option(MediaType contentFormat, std::error_c
 void CoapServer::process_block2_option(Block2 &block2, size_t totalSize, size_t &payloadLength, std::error_code &ec)
 {
     ENTER_TRACE();
-    TRACE("BLOCK2 number = ", block2.number(), "\n");
-    TRACE("BLOCK2 offset = ", block2.offset(), "\n");
-    TRACE("BLOCK2 size = ", block2.size(), "\n");
 
     block2.total(totalSize);
 
-    TRACE("BLOCK2 total = ", block2.total(), "\n");
     if (block2.size() < (block2.total() - block2.offset()))// if there is required to fragment the packet
     {
         block2.more(true);
@@ -362,8 +412,9 @@ void CoapServer::process_block2_option(Block2 &block2, size_t totalSize, size_t 
         block2.more(false);
         payloadLength = block2.total() - block2.offset();
     }
-    TRACE("BLOCK2 more = ", block2.more(), "\n");
-    TRACE("BLOCK2 payload length = ", payloadLength, "\n");
+    TRACE("BLOCK2: NUM:", block2.number(), ", M:", block2.more(), ", SZX:", block2.size(),
+                            ", Offset:", block2.offset(), " Total:", block2.total(), "\n");
+    TRACE("Payload Length: ", payloadLength, "\n");
 
     m_packet.options().clear(); // clear all options
 
@@ -427,6 +478,9 @@ void CoapServer::prepare_content_response(
         EXIT_TRACE();
         return;
     }
+    log_packet(OUTGOING, m_packet);
+    TRACE_PACKET(m_packet);
+
     serialize_response(ec);
     EXIT_TRACE();
 }
@@ -473,7 +527,6 @@ void CoapServer::prepare_content_response(
     if (status) // there is BLOCK_2 option in the incomming packet
     {
         ifs.seekg(block2.offset());
-
         process_block2_option(block2, fileSize, payloadLength, ec);
         if (ec.value())
         {
@@ -503,6 +556,9 @@ void CoapServer::prepare_content_response(
         EXIT_TRACE();
         return;
     }
+    log_packet(OUTGOING, m_packet);
+    TRACE_PACKET(m_packet);
+
     serialize_response(ec);
     EXIT_TRACE();
 }
@@ -515,7 +571,7 @@ void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
         path.erase(0,1);
     if(path.back() == '/')
         path.pop_back();
-    TRACE("path = ", path.c_str(), "\n");
+    TRACE("path: ", path.c_str(), "\n");
 
     CoreLink parser;
     parser.parse_core_link(m_coreLink.c_str(), ec);

@@ -8,7 +8,7 @@
 namespace posix
 {
 
-#define TRACE_CODE
+//#define TRACE_CODE
 //#undef TRACE_CODE
 
 template <typename T>
@@ -30,6 +30,8 @@ void trace_array(std::ostream &stream, Buffer &a)
 	for (std::size_t i = 0; i < a.offset()-1; ++i)
 	{
 		stream << std::hex << (int)a.data()[i] << ", ";
+		if (i && ((i + 1) % 16 == 0))
+			stream << "\n";
 	}
 	stream << std::hex << (int)a.data()[a.offset()-1] << std::dec  << " }\n";
 }
@@ -37,7 +39,7 @@ void trace_array(std::ostream &stream, Buffer &a)
 template <typename T>
 void trace_array(std::ostream &stream, std::vector<T> &a)
 {
-	stream << "{";
+	stream << "{ ";
 	for (std::size_t i = 0; i < a.size() - 1; ++i)
 	{
 		stream << a[i] << ", ";
@@ -48,12 +50,37 @@ void trace_array(std::ostream &stream, std::vector<T> &a)
 template <typename T, std::size_t N>
 void trace_array(std::ostream &stream, std::array<T, N> &a)
 {
-	stream << "{";
+	stream << "{ ";
 	for (std::size_t i = 0; i < N-1; ++i)
 	{
 		stream << a[i] << ", ";
 	}
 	stream << a[N-1] << " }\n";
+}
+
+void trace_array(std::ostream &stream, std::vector<uint8_t> &a)
+{
+	stream << "{ ";
+	for (std::size_t i = 0; i < a.size() - 1; ++i)
+	{
+		stream << std::hex << (int)a[i] << ", ";
+		if (i && ((i + 1) % 16 == 0))
+			stream << "\n";
+	}
+	stream << std::hex << (int)a[a.size()-1] << std::dec << " }\n";
+}
+
+template <typename std::size_t N>
+void trace_array(std::ostream &stream, std::array<uint8_t, N> &a)
+{
+	stream << "{ ";
+	for (std::size_t i = 0; i < N-1; ++i)
+	{
+		stream << std::hex << (int)a[i] << ", ";
+		if (i && ((i + 1) % 16 == 0))
+			stream << "\n";
+	}
+	stream << std::hex << (int)a[N-1] << std::dec << " }\n";
 }
 
 template <typename std::size_t N>
@@ -63,6 +90,8 @@ void trace_array(std::ostream &stream, const uint8_t (&a)[N])
 	for (std::size_t i = 0; i < N-1; ++i)
 	{
 		stream << std::hex << (int)a[i] << ", ";
+		if (i && ((i + 1) % 16 == 0))
+			stream << "\n";
 	}
 	stream << std::hex << (int)a[N-1] << std::dec << " }\n";
 }
