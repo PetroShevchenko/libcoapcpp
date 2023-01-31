@@ -35,6 +35,21 @@ UriPath::UriPath(UriPath &&other)
     }
 }
 
+UriPath &UriPath::operator=(const UriPath &other)
+{
+    if (this != &other)
+    {
+        m_path = other.m_path;
+        m_uri = other.m_uri;
+    }
+    return *this;
+}
+
+UriPath::UriPath(const UriPath &other)
+{
+    operator=(other);
+}
+
 UriPath &UriPath::operator=(UriPath &&other)
 {
     if(this != &other)
@@ -94,17 +109,25 @@ void UriPath::uri_to_path()
 {
     if (m_uri.type() == URI_TYPE_STRING)
     {
+        if (m_uri.asString().size() == 0)
+            return;
+        m_path.clear();
         for (size_t i = 0; i < m_uri.asString().size(); i++)
         {
-            m_path += "/";
+            if (i)
+                m_path += "/";
             m_path += m_uri.asString()[i];
         }
     }
     else if (m_uri.type() == URI_TYPE_INTEGER)
     {
+        if (m_uri.asInteger().size() == 0)
+            return;
+        m_path.clear();
         for (size_t i =0; i < m_uri.asInteger().size(); i++)
         {
-            m_path += "/";
+            if (i)
+                m_path += "/";
             m_path += std::to_string(m_uri.asInteger()[i]);
         }
     }

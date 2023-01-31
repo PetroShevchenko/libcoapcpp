@@ -1,4 +1,6 @@
 #include "core_link.h"
+#include "consts.h"
+#include <cstdio>
 #include <string>
 #include <cstring>
 #include <iostream>
@@ -23,6 +25,16 @@ CoreLinkType::CoreLinkType(CoreLinkType &&other)
 	{
 		uri = std::move(other.uri);
 		parameters = std::move(other.parameters);
+	}
+}
+
+CoreLinkType::CoreLinkType(const CoreLinkType &other)
+{
+	if (this != &other)
+	{
+		uri = other.uri;
+		std::copy(other.parameters.begin(), other.parameters.end(),
+			std::back_inserter(parameters));
 	}
 }
 
@@ -80,7 +92,7 @@ void CoreLink::parse_core_link(const char *coreLink, std::error_code &ec)
 		return;
 	}
 
-	size_t length = strlen(coreLink);
+	size_t length = strlen(coreLink) + sizeof('\0');
 
 	char *buffer = new char [length];
 	if (buffer == nullptr)
@@ -88,19 +100,21 @@ void CoreLink::parse_core_link(const char *coreLink, std::error_code &ec)
 		ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
 		return;
 	}
+	memset(buffer, 0, length);
+	strncpy(buffer, coreLink, length);
 
-	memcpy(buffer, coreLink, length);
-
+	std::vector<std::string> records;
 	char *token = strtok(buffer, recordSeparator);
 	while(token != NULL)
 	{
-		string record(token);
 
-		parse_record(record, ec);
-
-		if (ec.value()) break;
-
+		records.push_back(token);
 		token = strtok(NULL, recordSeparator);
+	}
+	for (auto record: records)
+	{
+		parse_record(record, ec);
+		if (ec.value()) break;
 	}
 
 	delete [] buffer;
@@ -205,6 +219,54 @@ find_attribute(const char *name, const CoreLinkType &record)
     	if (!strcmp(name, iter->name.c_str()))
     		return iter;
     return end;
+}
+
+bool create_record_from_path_if_contains(
+			const char *path,
+			const CoreLinkType &in,
+			CoreLinkType &out,
+			std::error_code &ec
+		)
+{
+	if (path == nullptr)
+	{
+		ec = make_system_error(EFAULT);
+		return false;
+	}
+
+	UriPath comparedPath(path, ec);
+	if (ec.value())
+		return false;
+
+	for (size_t i = 0, j = 0; i < in.uri.uri().asString().size(); i++)
+	{
+		if (comparedPath.uri().asString()[j] == in.uri.uri().asString()[i])
+		{
+			for(size_t k = i + 1; k < in.uri.uri().asString().size(); ++k)
+			{
+				out.uri.uri().asString().push_back(comparedPath.uri().asString()[j++]);
+				if (j == comparedPath.uri().asString().size())
+				{
+					for(size_t l = k; l < in.uri.uri().asString().size(); ++l)
+						out.uri.uri().asString().push_back(in.uri.uri().asString()[l]);
+
+					out.uri.uri_to_path();
+					std::copy(in.parameters.begin(), in.parameters.end(),
+						std::back_inserter(out.parameters));
+					return true;
+				}
+
+				if (comparedPath.uri().asString()[j] != in.uri.uri().asString()[k])
+				{
+					j = 0;
+					i++;
+					out.uri.uri().asString().clear();
+					break;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 }//namespace core_link

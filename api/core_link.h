@@ -61,7 +61,17 @@ struct CoreLinkParameter
 			return *this;
 		}
 
-		Value &operator=(const Value &other) = delete;
+		Value &operator=(const Value &other)
+		{
+			if (this == &other)
+				return *this;
+
+			type = other.type;
+			asNumber = other.asNumber;
+			asString = other.asString;
+
+			return *this;
+		}
 
 		void clear()
 		{
@@ -90,8 +100,21 @@ struct CoreLinkParameter
 		return *this;
 	}
 
+	CoreLinkParameter &operator=(const CoreLinkParameter &other)
+	{
+		if (this != &other)
+		{
+			name = other.name;
+			value = other.value;
+		}
+		return *this;
+	}
+
 	CoreLinkParameter(CoreLinkParameter &&other)
 	{ operator=(std::move(other)); }
+
+	CoreLinkParameter(const CoreLinkParameter &other)
+	{ operator=(other); }
 
 	~CoreLinkParameter()
 	{}
@@ -110,11 +133,13 @@ struct CoreLinkType
 
 	CoreLinkType()
 	: uri{}, parameters{0}
-	{}
+	{ uri.uri().type(URI_TYPE_STRING); }
 
 	CoreLinkType(const char *_uri, std::error_code &ec)
 	: uri{_uri, ec}, parameters{0}
 	{}
+
+	CoreLinkType(const CoreLinkType&);
 
 	CoreLinkType(CoreLinkType &&other);
 
@@ -176,6 +201,9 @@ bool is_attribute_matched(const char *name, unsigned long value, const CoreLinkP
 
 std::vector<CoreLinkParameter>::const_iterator
 	find_attribute(const char *name, const CoreLinkType &record);
+
+bool create_record_from_path_if_contains(const char *path,
+	const CoreLinkType &in, CoreLinkType &out, std::error_code &ec);
 }
 /*
 TODO use Uri class to convert data from Uri to CoRE-Link format 

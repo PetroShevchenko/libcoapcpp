@@ -283,6 +283,8 @@ MessageCode CoapServer::make_protocol_error_code(std::error_code &ec)
         return BAD_REQUEST;
     case CoapStatus::COAP_ERR_NOT_IMPLEMENTED:
         return NOT_IMPLEMENTED;
+    case CoapStatus::COAP_ERR_NOT_FOUND:
+        return NOT_FOUND;
     case CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED:
         return METHOD_NOT_ALLOWED;
     default:
@@ -563,6 +565,23 @@ void CoapServer::prepare_content_response(
     EXIT_TRACE();
 }
 
+void CoapServer::prepare_core_link_response(std::vector<CoreLinkType> &records, error_code &ec)
+{
+    ENTER_TRACE();
+    CoreLink parser;
+    for (auto record : records)
+        parser.add_record(move(record));
+    parser.create_core_link(ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    TRACE("Created Core-Link response: ", parser.core_link().c_str(), "\n");
+    prepare_content_response(ec, LINK_FORMAT, parser.core_link().c_str(), parser.core_link().size());
+    EXIT_TRACE();
+}
+
 void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
 {
     ENTER_TRACE();
@@ -571,7 +590,6 @@ void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
         path.erase(0,1);
     if(path.back() == '/')
         path.pop_back();
-    TRACE("path: ", path.c_str(), "\n");
 
     CoreLink parser;
     parser.parse_core_link(m_coreLink.c_str(), ec);
@@ -580,6 +598,8 @@ void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
         EXIT_TRACE();
         return;
     }
+    std::vector<CoreLinkType> records;
+
     for (vector<CoreLinkType>::const_iterator
             iter = parser.payload().begin(),
             end = parser.payload().end(); iter != end; ++iter)
@@ -596,12 +616,33 @@ void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
                 EXIT_TRACE();
                 return;
             }
-            // TODO prepare Core-Link payload 
+            attribute_iterator = core_link::find_attribute("ct", *iter);
+            if (attribute_iterator != iter->parameters.end()
+                && core_link::is_attribute_matched("ct", static_cast<unsigned long>(LINK_FORMAT), *attribute_iterator))
+            {
+                records.push_back(*iter);
+                prepare_core_link_response(records, ec);
+                EXIT_TRACE();
+                return;
+            }
+        }
+        else
+        {
+            CoreLinkType record;
+            bool status = core_link::create_record_from_path_if_contains(path.c_str(), *iter, record, ec);
+            if (ec.value())
+            {
+                EXIT_TRACE();
+                return;
+            }
+            if (status)
+                records.push_back(record);
         }
     }
-    //XXX
-    ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
-    // TODO prepare Core-Link payload
+    if (records.size())
+        prepare_core_link_response(records, ec);
+    else
+        ec = make_error_code(CoapStatus::COAP_ERR_BAD_REQUEST);
     EXIT_TRACE();
 }
 

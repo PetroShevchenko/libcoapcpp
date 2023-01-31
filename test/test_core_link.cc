@@ -82,11 +82,12 @@ TEST(testCoreLink, parseCoreLink)
 	EXPECT_EQ(ec.value(), 0);
 
 #ifdef PRINT_TESTED_VALUES
+	info("Records: {0:d}", parser.payload().size());
 	for(vector<CoreLinkType>::const_iterator
 				iter=parser.payload().begin(),
 				end=parser.payload().end(); iter != end; ++iter)
 	{
-		info("{}", iter->uri.path().c_str());
+		info("Record: {}", iter->uri.path().c_str());
 
 		for(vector<CoreLinkParameter>::const_iterator
 				iter2=iter->parameters.begin(),
