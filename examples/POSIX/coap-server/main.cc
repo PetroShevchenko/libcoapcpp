@@ -138,7 +138,7 @@ static void signal_handler(int signo)
 static void initialize_connection(bool useIPv4, uint16_t portnum, UdpConnectionType &conn, error_code &ec)
 {
 	uint16_t port;
-	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	int fd = socket(useIPv4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0);
 	if (fd == -1) {
 		ec = make_error_code(CoapStatus::COAP_ERR_CREATE_SOCKET);
 		return;
