@@ -24,7 +24,7 @@ void trace(std::ostream &stream, T &t, Args... args)
 	trace(stream, args...);
 }
 
-void trace_array(std::ostream &stream, Buffer &a)
+inline void trace_array(std::ostream &stream, Buffer &a)
 {
 	stream << "{ ";
 	for (std::size_t i = 0; i < a.offset()-1; ++i)
@@ -58,7 +58,7 @@ void trace_array(std::ostream &stream, std::array<T, N> &a)
 	stream << a[N-1] << " }\n";
 }
 
-void trace_array(std::ostream &stream, std::vector<uint8_t> &a)
+inline void trace_array(std::ostream &stream, std::vector<uint8_t> &a)
 {
 	stream << "{ ";
 	for (std::size_t i = 0; i < a.size() - 1; ++i)
