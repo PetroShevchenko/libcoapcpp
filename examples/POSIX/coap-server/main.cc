@@ -32,16 +32,16 @@ struct CommandLineOptions
 
 typedef union 
 {
-	struct sockaddr_in addr;
-	struct sockaddr_in6 addr6;
+    struct sockaddr_in addr;
+    struct sockaddr_in6 addr6;
 } SocketAddressType;
 
 typedef struct
 {
-	bool useIPv4;
-	SocketAddressType serv;
-	SocketAddressType client;
-	int socketFd;
+    bool useIPv4;
+    SocketAddressType serv;
+    SocketAddressType client;
+    int socketFd;
 } UdpConnectionType;
 
 static bool g_terminate = false;
@@ -137,39 +137,39 @@ static void signal_handler(int signo)
 
 static void initialize_connection(bool useIPv4, uint16_t portnum, UdpConnectionType &conn, error_code &ec)
 {
-	uint16_t port;
-	int fd = socket(useIPv4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0);
-	if (fd == -1) {
-		ec = make_error_code(CoapStatus::COAP_ERR_CREATE_SOCKET);
-		return;
-	}
+    uint16_t port;
+    int fd = socket(useIPv4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0);
+    if (fd == -1) {
+        ec = make_error_code(CoapStatus::COAP_ERR_CREATE_SOCKET);
+        return;
+    }
 
-	port = htons((uint16_t)portnum);
+    port = htons((uint16_t)portnum);
     conn.useIPv4 = useIPv4;
-	if (conn.useIPv4)
-	{
-		// start inintialization by zero values
-		bzero(&conn.serv.addr, sizeof(conn.serv.addr));
-		// initialization of server address structure
-		conn.serv.addr.sin_family = AF_INET;
-		conn.serv.addr.sin_addr.s_addr = INADDR_ANY;
-		conn.serv.addr.sin_port = port;
-	}
-	else
-	{
-		bzero(&conn.serv.addr6, sizeof(conn.serv.addr6));
-		conn.serv.addr6.sin6_family = AF_INET6;
-		conn.serv.addr6.sin6_addr = in6addr_any;
-		conn.serv.addr6.sin6_port = port;
-	}
-	// bind an empty socket to serv.addr(6) structure
-	if (bind(fd, useIPv4 ? (struct sockaddr *)&conn.serv.addr : (struct sockaddr *)&conn.serv.addr6,
-				 useIPv4 ? sizeof(conn.serv.addr) : sizeof(conn.serv.addr6))==-1) {
-		ec = make_error_code(CoapStatus::COAP_ERR_SOCKET_NOT_BOUND);
-		close(fd);
-		return;
-	}
-	conn.socketFd = fd;
+    if (conn.useIPv4)
+    {
+        // start inintialization by zero values
+        bzero(&conn.serv.addr, sizeof(conn.serv.addr));
+        // initialization of server address structure
+        conn.serv.addr.sin_family = AF_INET;
+        conn.serv.addr.sin_addr.s_addr = INADDR_ANY;
+        conn.serv.addr.sin_port = port;
+    }
+    else
+    {
+        bzero(&conn.serv.addr6, sizeof(conn.serv.addr6));
+        conn.serv.addr6.sin6_family = AF_INET6;
+        conn.serv.addr6.sin6_addr = in6addr_any;
+        conn.serv.addr6.sin6_port = port;
+    }
+    // bind an empty socket to serv.addr(6) structure
+    if (bind(fd, useIPv4 ? (struct sockaddr *)&conn.serv.addr : (struct sockaddr *)&conn.serv.addr6,
+                 useIPv4 ? sizeof(conn.serv.addr) : sizeof(conn.serv.addr6))==-1) {
+        ec = make_error_code(CoapStatus::COAP_ERR_SOCKET_NOT_BOUND);
+        close(fd);
+        return;
+    }
+    conn.socketFd = fd;
 }
 
 int main(int argc, char **argv)
@@ -188,6 +188,12 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    if (signal(SIGINT, signal_handler) == SIG_ERR)
+    {
+        error("Unable to set SIGINT handler");
+        exit(EXIT_FAILURE);
+    }
+
     string coreLinkContent;
 
     if (!read_core_link_content(g_contentPath, coreLinkContent))
@@ -197,20 +203,22 @@ int main(int argc, char **argv)
     }
     info("{} has been read", g_contentPath);
 
-    if (signal(SIGINT, signal_handler) == SIG_ERR)
+    error_code ec;
+{
+    coap::CoreLink parser;
+    parser.parse_core_link(coreLinkContent.c_str(), ec);
+    if (ec.value()) // check if the file read is in Core-Link format
     {
-        error("Unable to set SIGINT handler");
+        error("{}", ec.message());
         exit(EXIT_FAILURE);
     }
-
-    error_code ec;
-
-	initialize_connection(options.useIPv4, options.port, g_connection, ec);
-	if (ec.value())
-	{
-		error("{}", ec.message());
-		return EXIT_FAILURE;
-	}
+}
+    initialize_connection(options.useIPv4, options.port, g_connection, ec);
+    if (ec.value())
+    {
+        error("{}", ec.message());
+        exit(EXIT_FAILURE);
+    }
 
     struct sockaddr *client_addr;
     int addr_len;

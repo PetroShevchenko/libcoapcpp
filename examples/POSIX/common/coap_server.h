@@ -77,6 +77,7 @@ private:
     void prepare_content_response(std::error_code &ec, coap::MediaType contentFormat, const void *data, size_t size);
     void prepare_content_response(std::error_code &ec, coap::MediaType contentFormat, const char *filename);
     void prepare_core_link_response(std::vector<coap::CoreLinkType> &records, std::error_code &ec);
+    void prepare_senml_json_response(const coap::CoreLinkType &record, std::error_code &ec);
     void process_uri_path(std::string &path, std::error_code &ec);
     void add_content_format_option(coap::MediaType contentFormat, std::error_code &ec);
     void process_block2_option(coap::Block2 &block2, size_t totalSize, size_t &payloadLength, std::error_code &ec);

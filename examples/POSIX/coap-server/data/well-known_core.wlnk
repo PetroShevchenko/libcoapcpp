@@ -1,2 +1,4 @@
 </firmware>;ct=40;title="Firmware Index",
-</firmware/NUCLEO-F429ZI/udp-server/firmware.bin>;rt="firmware";sz=302816
+</firmware/NUCLEO-F429ZI/udp-server/firmware.bin>;rt="firmware";sz=302816,
+</sensors/dht11/temp>;rt="temperature-c";if="sensor",
+</sensors/dht11/hum>;rt="humidity-%";if="sensor"

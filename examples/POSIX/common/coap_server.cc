@@ -2,6 +2,7 @@
 #include "trace.h"
 #include "core_link.h"
 #include "utils.h"
+#include "sensor_stubs.h"
 #include <iostream>
 #include <cstdint>
 #include <arpa/inet.h>
@@ -13,6 +14,7 @@
 using namespace spdlog;
 using namespace coap;
 using namespace std;
+using namespace sensors;
 
 namespace posix
 {
@@ -582,6 +584,34 @@ void CoapServer::prepare_core_link_response(std::vector<CoreLinkType> &records, 
     EXIT_TRACE();
 }
 
+void CoapServer::prepare_senml_json_response(const CoreLinkType &record, error_code &ec)
+{
+    ENTER_TRACE();
+    // XXX test sensor interface
+    SensorSet sensors;
+    DHT11Simulator DHT11;
+    struct DHT11Simulator::Results results; 
+
+    DHT11.bind(sensors, ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+
+    sensors.process(DOUBLE_TEMP_HUM, NULL, &results, ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    //XXX a stub
+    ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
+    //TODO
+
+    EXIT_TRACE();
+}
+
 void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
 {
     ENTER_TRACE();
@@ -622,6 +652,14 @@ void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
             {
                 records.push_back(*iter);
                 prepare_core_link_response(records, ec);
+                EXIT_TRACE();
+                return;
+            }
+            attribute_iterator = core_link::find_attribute("if", *iter);
+            if (attribute_iterator != iter->parameters.end()
+                && core_link::is_attribute_matched("if", "sensor", *attribute_iterator))
+            {
+                prepare_senml_json_response(*iter, ec);
                 EXIT_TRACE();
                 return;
             }
