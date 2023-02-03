@@ -1,6 +1,8 @@
 #ifndef _SENSOR_H
 #define _SENSOR_H
 #include "error.h"
+#include "senml_json.h"
+#include "uri.h"
 #include <vector>
 #include <string>
 
@@ -45,17 +47,33 @@ public:
 
 protected:
 	virtual void init(std::error_code &ec) = 0;
-	virtual void handler(const void *in, void *out, std::error_code &ec) = 0;
+	virtual void handler(
+					const coap::UriPath &uriPath,
+					std::vector<coap::SenmlJsonType> *in,
+					std::vector<coap::SenmlJsonType> *out,
+					std::error_code &ec) = 0;
 
 private:
-	static void handler(void *object, const void *in, void *out, std::error_code &ec);
+	static void handler(
+					Sensor *object,
+					const coap::UriPath &uriPath,
+					std::vector<coap::SenmlJsonType> *in,
+					std::vector<coap::SenmlJsonType> *out,
+					std::error_code &ec
+				);
 
 private:
 	std::string m_name;
 	SensorType 	m_type;
 };
 
-typedef void (*sensor_handler_ptr)(void *object, const void *in, void *out, std::error_code &ec);
+typedef void (*sensor_handler_ptr)(
+						Sensor *object,
+						const coap::UriPath &uriPath,
+						std::vector<coap::SenmlJsonType> *in,
+						std::vector<coap::SenmlJsonType> *out,
+						std::error_code &ec
+					);
 
 class SensorSet
 {
@@ -65,11 +83,17 @@ public:
 	{}
 
 public:
-	void register_callback(void *object, SensorType type, sensor_handler_ptr clbk, std::error_code &ec);
-	void process(SensorType type, const void *in, void *out, std::error_code &ec);
+	void register_callback(Sensor *object, SensorType type, sensor_handler_ptr clbk, std::error_code &ec);
+	void process(
+				SensorType type,
+				const coap::UriPath &uriPath,
+				std::vector<coap::SenmlJsonType> *in,
+				std::vector<coap::SenmlJsonType> *out,
+				std::error_code &ec
+			);
 
 private:
-	std::vector<void *> 			m_objects;
+	std::vector<Sensor *> 			m_objects;
 	std::vector<sensor_handler_ptr> m_callbacks;
 	const size_t c_sensors = SENSOR_QTY; 
 };

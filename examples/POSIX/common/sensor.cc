@@ -38,10 +38,16 @@ void Sensor::bind(SensorSet &collection, std::error_code &ec)
 	EXIT_TRACE();
 }
 
-void Sensor::handler(void *object, const void *in, void *out, std::error_code &ec)
+void Sensor::handler(
+					Sensor *object,
+					const coap::UriPath &uriPath,
+					std::vector<coap::SenmlJsonType> *in,
+					std::vector<coap::SenmlJsonType> *out,
+					std::error_code &ec
+				)
 {
 	ENTER_TRACE();
-	((Sensor *)object)->handler(in, out, ec);
+	object->handler(uriPath, in, out, ec);
 	EXIT_TRACE();
 }
 
@@ -56,7 +62,12 @@ SensorSet::SensorSet()
 	}
 }
 
-void SensorSet::register_callback(void *object, SensorType type, sensor_handler_ptr clbk, std::error_code &ec)
+void SensorSet::register_callback(
+						Sensor *object,
+						SensorType type,
+						sensor_handler_ptr clbk,
+						std::error_code &ec
+					)
 {
 	ENTER_TRACE();
 	if (!is_sensor_type_correct(type))
@@ -81,7 +92,13 @@ void SensorSet::register_callback(void *object, SensorType type, sensor_handler_
 	EXIT_TRACE();
 }
 
-void SensorSet::process(SensorType type, const void *in, void *out, std::error_code &ec)
+void SensorSet::process(
+					SensorType type,
+					const coap::UriPath &uriPath,
+					std::vector<coap::SenmlJsonType> *in,
+					std::vector<coap::SenmlJsonType> *out,
+					std::error_code &ec
+				)
 {
 	ENTER_TRACE();
 	if (!is_sensor_type_correct(type))
@@ -93,7 +110,7 @@ void SensorSet::process(SensorType type, const void *in, void *out, std::error_c
 	TRACE("m_callbacks[", sensor_type_to_string(type), "]: ", (void *)m_callbacks[type], "\n");
 	TRACE("m_objects[", sensor_type_to_string(type), "]: ", m_objects[type], "\n");	
 	if (m_callbacks[type] && m_objects[type])
-		m_callbacks[type](m_objects[type], in, out, ec);
+		m_callbacks[type](m_objects[type], uriPath, in, out, ec);
 	EXIT_TRACE();
 }
 

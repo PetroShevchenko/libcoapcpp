@@ -1,6 +1,9 @@
 #include "coap_server.h"
 #include "buffer.h"
 #include "error.h"
+#include "sensor.h"
+#include "endpoint.h"
+#include "sensor_stubs.h"
 
 #include <iostream>
 #include <string>
@@ -8,6 +11,7 @@
 #include <cstdint>
 #include <memory>
 #include <array>
+#include <iterator>
 #include <fstream>
 
 #include <sys/select.h>
@@ -23,6 +27,8 @@
 using namespace std;
 using namespace spdlog;
 using namespace posix;
+using namespace sensors;
+using namespace coap;
 
 struct CommandLineOptions
 {
@@ -49,6 +55,12 @@ static bool g_terminate = false;
 static const char * g_contentPath = "data/well-known_core.wlnk";
 
 static UdpConnectionType g_connection;
+
+static SensorSet g_KS0068;
+
+static DHT11_Simulator g_DHT11;
+
+static RGB_LED_Simulator g_RGB_LED;
 
 static void usage()
 {
@@ -135,6 +147,42 @@ static void signal_handler(int signo)
     }
 }
 
+static EndpointPool *create_sensor_endpoints(const char *coreLinkContent, error_code &ec)
+{
+    coap::CoreLink parser;
+    parser.parse_core_link(coreLinkContent, ec);
+    if (ec.value()) // check if the content read is in Core-Link format
+    {
+        return nullptr;
+    }
+    std::vector<EndpointType> endpoints = {
+        { "sensors/DHT11/temp", DOUBLE_TEMP_HUM, &g_KS0068 },
+        { "sensors/DHT11/hum", DOUBLE_TEMP_HUM, &g_KS0068 },
+        { "sensors/RGB_LED/red", RGB_LED, &g_KS0068 },
+        { "sensors/RGB_LED/green", RGB_LED, &g_KS0068 },
+        { "sensors/RGB_LED/blue", RGB_LED, &g_KS0068 }
+    };
+
+    static EndpointPool endpointPool(endpoints);
+
+    endpointPool.compare_endpoints(parser, ec);// check if the parser contains the valid URIs
+    if (ec.value())
+    {
+        return nullptr;
+    }
+
+    return &endpointPool;
+}
+
+static void initialize_sensors(error_code &ec)
+{
+    g_DHT11.bind(g_KS0068, ec);
+    if (ec.value())
+        return;
+
+    g_RGB_LED.bind(g_KS0068, ec);
+}
+
 static void initialize_connection(bool useIPv4, uint16_t portnum, UdpConnectionType &conn, error_code &ec)
 {
     uint16_t port;
@@ -204,21 +252,30 @@ int main(int argc, char **argv)
     info("{} has been read", g_contentPath);
 
     error_code ec;
-{
-    coap::CoreLink parser;
-    parser.parse_core_link(coreLinkContent.c_str(), ec);
-    if (ec.value()) // check if the file read is in Core-Link format
+
+    EndpointPool *endpoints = create_sensor_endpoints(coreLinkContent.c_str(), ec);
+    if (ec.value())
     {
         error("{}", ec.message());
         exit(EXIT_FAILURE);
     }
-}
+    info("Endpoints initialized");
+
+    initialize_sensors(ec);
+    if (ec.value())
+    {
+        error("{}", ec.message());
+        exit(EXIT_FAILURE);
+    }
+    info("Sensors initialized");
+
     initialize_connection(options.useIPv4, options.port, g_connection, ec);
     if (ec.value())
     {
         error("{}", ec.message());
         exit(EXIT_FAILURE);
     }
+    info("Connection initialized");
 
     struct sockaddr *client_addr;
     int addr_len;
@@ -236,7 +293,10 @@ int main(int argc, char **argv)
 
     Buffer buf(BUFFER_SIZE);
 
-    CoapServer server("CoAP Server", coreLinkContent.c_str());
+    CoapServer server("CoAP Server",
+                    coreLinkContent.c_str(),
+                    endpoints
+                );
     server.timeout(60);
     server.start();
     info("CoAP server has been started");

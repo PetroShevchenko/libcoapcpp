@@ -6,6 +6,8 @@
 #include "error.h"
 #include "packet.h"
 #include "blockwise.h"
+#include "sensor.h"
+#include "endpoint.h"
 
 namespace posix
 {
@@ -27,7 +29,8 @@ class CoapServer
 public:
     CoapServer(
             const char *name,
-            const char *coreLink
+            const char *coreLink,
+            sensors::EndpointPool *endpoints
         ) : m_name{name},
             m_coreLink{coreLink},
             m_timeout{0},
@@ -36,7 +39,8 @@ public:
             m_ec{},
             m_fsaState{FSA_STATE_DEFAULT},
             m_message{nullptr},
-            m_packet{}
+            m_packet{},
+            m_endpoints{endpoints}
         {}
     ~CoapServer()
         {}
@@ -108,15 +112,16 @@ public:
     { m_message = value; }
 
 private:
-    std::string                 m_name;
-    std::string                 m_coreLink;
-    time_t                      m_timeout;
-    std::atomic<bool>           m_running;
-    std::atomic<bool>           m_processing;
-    std::error_code             m_ec;
-    FsaState                    m_fsaState;
-    Buffer                      *m_message;
-    coap::Packet                m_packet;
+    std::string                         m_name;
+    std::string                         m_coreLink;
+    time_t                              m_timeout;
+    std::atomic<bool>                   m_running;
+    std::atomic<bool>                   m_processing;
+    std::error_code                     m_ec;
+    FsaState                            m_fsaState;
+    Buffer                              *m_message;
+    coap::Packet                        m_packet;
+    sensors::EndpointPool               *m_endpoints;
 };
 
 }

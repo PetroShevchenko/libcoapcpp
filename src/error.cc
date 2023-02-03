@@ -137,6 +137,12 @@ std::string CoapErrorCategory::message(int ev) const
         case CoapStatus::COAP_ERR_PARSE_CORE_LINK:
             return "Failed to parse CoRe-Link content";
 
+        case CoapStatus::COAP_ERR_NO_ENDPOINT:
+            return "There is no andpoint corresponding to CoRe-Link";
+
+        case CoapStatus::COAP_ERR_ENDPOINT_ANSWER:
+            return "Failed to get answer from endpoint";
+
         case CoapStatus::COAP_ERR_BAD_REQUEST:
             return "4.00 Bad Request";
 

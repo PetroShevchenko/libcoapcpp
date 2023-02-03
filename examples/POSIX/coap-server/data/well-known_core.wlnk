@@ -1,4 +1,7 @@
 </firmware>;ct=40;title="Firmware Index",
 </firmware/NUCLEO-F429ZI/udp-server/firmware.bin>;rt="firmware";sz=302816,
-</sensors/dht11/temp>;rt="temperature-c";if="sensor",
-</sensors/dht11/hum>;rt="humidity-%";if="sensor"
+</sensors/DHT11/temp>;rt="temperature-c";if="sensor",
+</sensors/DHT11/hum>;rt="humidity-%";if="sensor",
+</sensors/RGB_LED/red>;rt="light-%";if="sensor",
+</sensors/RGB_LED/green>;rt="light-%";if="sensor",
+</sensors/RGB_LED/blue>;rt="light-%";if="sensor"

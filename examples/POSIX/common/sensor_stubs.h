@@ -5,27 +5,44 @@
 namespace sensors
 {
 
-class DHT11Simulator : public Sensor
+class DHT11_Simulator : public Sensor
 {
 public:
-	DHT11Simulator()
+	DHT11_Simulator()
 	: Sensor("DHT11_Simulator", DOUBLE_TEMP_HUM)
 	{}
-	~DHT11Simulator() override
+	~DHT11_Simulator() override
 	{}
 
 	//void init(SensorSet &collection, std::error_code &ec); 
 
+private:
+	void init(std::error_code &ec) override;	
+	void handler(
+			const coap::UriPath &uriPath,
+			std::vector<coap::SenmlJsonType> *in,
+			std::vector<coap::SenmlJsonType> *out,
+			std::error_code &ec) override;
+};
+
+class RGB_LED_Simulator : public Sensor
+{
 public:
-	struct Results
-	{
-		uint8_t temperature;
-		uint8_t humidity;
-	};
+	RGB_LED_Simulator()
+	: Sensor("RGB_LED_Simulator", RGB_LED)
+	{}
+	~RGB_LED_Simulator() override
+	{}
+
+	//void init(SensorSet &collection, std::error_code &ec); 
 
 private:
 	void init(std::error_code &ec) override;	
-	void handler(const void *in, void *out, std::error_code &ec) override;
+	void handler(
+			const coap::UriPath &uriPath,
+			std::vector<coap::SenmlJsonType> *in,
+			std::vector<coap::SenmlJsonType> *out,
+			std::error_code &ec) override;
 };
 
 } //namespace sensors 

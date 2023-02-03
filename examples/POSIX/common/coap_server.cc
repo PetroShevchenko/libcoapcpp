@@ -587,28 +587,50 @@ void CoapServer::prepare_core_link_response(std::vector<CoreLinkType> &records, 
 void CoapServer::prepare_senml_json_response(const CoreLinkType &record, error_code &ec)
 {
     ENTER_TRACE();
-    // XXX test sensor interface
-    SensorSet sensors;
-    DHT11Simulator DHT11;
-    struct DHT11Simulator::Results results; 
-
-    DHT11.bind(sensors, ec);
-    if (ec.value())
+    for (vector<Endpoint>::const_iterator iter = m_endpoints->endpoints().begin(),
+                        end = m_endpoints->endpoints().end(); iter != end; ++iter)
     {
-        EXIT_TRACE();
-        return;
-    }
+        if (iter->is_path_matched(record.uri.path()) && iter->sensor_set())
+        {
+            vector<SenmlJsonType> records;
+            SensorSet *ss = const_cast<SensorSet *>(iter->sensor_set());
 
-    sensors.process(DOUBLE_TEMP_HUM, NULL, &results, ec);
-    if (ec.value())
-    {
-        EXIT_TRACE();
-        return;
+            ss->process(
+                    iter->type(),
+                    record.uri,
+                    nullptr,
+                    &records,
+                    ec
+                );
+            if (ec.value())
+            {
+                EXIT_TRACE();
+                return;    
+            }
+            if (records.empty())
+            {
+                ec = make_error_code(CoapStatus::COAP_ERR_ENDPOINT_ANSWER);
+                EXIT_TRACE();
+                return;
+            }
+            SenmlJson parser;
+            for (auto r : records)
+            {
+                parser.add_record(r);
+            }
+            parser.create_json(ec);
+            if (ec.value())
+            {
+                EXIT_TRACE();
+                return;
+            }
+            TRACE("Created Senml-Json response: ", parser.json(), "\n");
+            prepare_content_response(ec, SENML_JSON, parser.json(), strlen(parser.json()));
+            EXIT_TRACE();
+            return;            
+        }
     }
-    //XXX a stub
-    ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
-    //TODO
-
+    ec = make_error_code(CoapStatus::COAP_ERR_NOT_FOUND);
     EXIT_TRACE();
 }
 
