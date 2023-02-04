@@ -185,24 +185,13 @@ void CoapServer::handle_get_request()
     ENTER_TRACE();
     m_fsaState = FSA_STATE_DONE;
 
-    std::vector<Option *> uri_path;
-    size_t qty;
-
-    qty = m_packet.find_option(URI_PATH, uri_path);
-    if (qty == 0) // GET request doesn't contain any Uri-Path option
+    std::string path;
+    extract_path_from_option(path, m_ec);
+    if (m_ec.value())
     {
-        m_ec = make_error_code(CoapStatus::COAP_ERR_BAD_REQUEST);
         EXIT_TRACE();
         return;
     }
-    std::string path;
-    for (size_t i = 0; i < qty; ++i)
-    {
-        TRACE("Uri-Path [", i, "]:\n");
-        TRACE_ARRAY((uri_path[i])->value());
-        path += "/" + std::string((uri_path[i])->value().begin(), (uri_path[i])->value().end());
-    }
-    TRACE("Full path: ", path, "\n");
     if (core_link::is_root(path))
     {
         prepare_content_response(m_ec, LINK_FORMAT, m_coreLink.c_str(), m_coreLink.length());
@@ -235,8 +224,16 @@ void CoapServer::handle_post_request()
 void CoapServer::handle_put_request()
 {
     ENTER_TRACE();
-    m_ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
     m_fsaState = FSA_STATE_DONE;
+
+    std::string path;
+    extract_path_from_option(path, m_ec);
+    if (m_ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    process_uri_path(path, m_ec);
     EXIT_TRACE();
 }
 
@@ -397,6 +394,29 @@ void CoapServer::add_content_format_option(MediaType contentFormat, std::error_c
         EXIT_TRACE();
         return;
     }
+    EXIT_TRACE();
+}
+
+void CoapServer::extract_path_from_option(std::string &path, std::error_code &ec)
+{
+    ENTER_TRACE();
+    std::vector<Option *> uri_path;
+    size_t qty;
+
+    qty = m_packet.find_option(URI_PATH, uri_path);
+    if (qty == 0) // GET request doesn't contain any Uri-Path option
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_BAD_REQUEST);
+        EXIT_TRACE();
+        return;
+    }
+    for (size_t i = 0; i < qty; ++i)
+    {
+        TRACE("Uri-Path [", i, "]:\n");
+        TRACE_ARRAY((uri_path[i])->value());
+        path += "/" + std::string((uri_path[i])->value().begin(), (uri_path[i])->value().end());
+    }
+    TRACE("Full path: ", path, "\n");
     EXIT_TRACE();
 }
 
@@ -584,7 +604,12 @@ void CoapServer::prepare_core_link_response(std::vector<CoreLinkType> &records, 
     EXIT_TRACE();
 }
 
-void CoapServer::prepare_senml_json_response(const CoreLinkType &record, error_code &ec)
+void CoapServer::process_sensor_endpoint(
+                        const CoreLinkType &record,
+                        vector<SenmlJsonType> *to_sensor,
+                        vector<SenmlJsonType> *from_sensor,
+                        error_code &ec
+                    )
 {
     ENTER_TRACE();
     for (vector<Endpoint>::const_iterator iter = m_endpoints->endpoints().begin(),
@@ -592,45 +617,62 @@ void CoapServer::prepare_senml_json_response(const CoreLinkType &record, error_c
     {
         if (iter->is_path_matched(record.uri.path()) && iter->sensor_set())
         {
-            vector<SenmlJsonType> records;
             SensorSet *ss = const_cast<SensorSet *>(iter->sensor_set());
-
-            ss->process(
-                    iter->type(),
-                    record.uri,
-                    nullptr,
-                    &records,
-                    ec
-                );
+            ss->process(iter->type(), record.uri, to_sensor, from_sensor, ec);
             if (ec.value())
             {
                 EXIT_TRACE();
                 return;    
             }
-            if (records.empty())
-            {
+            if (from_sensor && from_sensor->empty())
                 ec = make_error_code(CoapStatus::COAP_ERR_ENDPOINT_ANSWER);
-                EXIT_TRACE();
-                return;
-            }
-            SenmlJson parser;
-            for (auto r : records)
-            {
-                parser.add_record(r);
-            }
-            parser.create_json(ec);
-            if (ec.value())
-            {
-                EXIT_TRACE();
-                return;
-            }
-            TRACE("Created Senml-Json response: ", parser.json(), "\n");
-            prepare_content_response(ec, SENML_JSON, parser.json(), strlen(parser.json()));
             EXIT_TRACE();
-            return;            
+            return;
         }
     }
     ec = make_error_code(CoapStatus::COAP_ERR_NOT_FOUND);
+    EXIT_TRACE();
+}
+
+void CoapServer::prepare_senml_json_response(const vector<SenmlJsonType> &records, error_code &ec)
+{
+    ENTER_TRACE();
+    SenmlJson parser;
+    for (auto r : records)
+    {
+        parser.add_record(r);
+    }
+    parser.create_json(ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;
+    }
+    TRACE("Created Senml-Json response: ", parser.json(), "\n");
+    prepare_content_response(ec, SENML_JSON, parser.json(), strlen(parser.json()));
+    EXIT_TRACE();
+}
+
+void CoapServer::fill_senml_json_payload(vector<SenmlJsonType> &payload, std::error_code &ec)
+{
+    ENTER_TRACE();
+    if (m_packet.payload().size() == 0)
+    {
+        ec = make_error_code(CoapStatus::COAP_ERR_NO_PAYLOAD);
+        EXIT_TRACE();
+        return;
+    }
+    std::string json(m_packet.payload().begin(), m_packet.payload().end());
+    SenmlJson parser;
+
+    parser.parse_json(json.c_str(), ec);
+    if (ec.value())
+    {
+        EXIT_TRACE();
+        return;        
+    }
+    std::copy(parser.payload().begin(), parser.payload().end(),
+        std::back_inserter(payload));
     EXIT_TRACE();
 }
 
@@ -660,33 +702,71 @@ void CoapServer::process_uri_path(std::string &path, std::error_code &ec)
         {
             std::vector<CoreLinkParameter>::const_iterator attribute_iterator;
             attribute_iterator = core_link::find_attribute("rt", *iter);
-            if (attribute_iterator != iter->parameters.end()
-                && core_link::is_attribute_matched("rt", "firmware", *attribute_iterator))
+            if (attribute_iterator != iter->parameters.end())
             {
-                path = "data/" + path;
-                prepare_content_response(ec, OCTET_STREAM, path.c_str());
-                EXIT_TRACE();
-                return;
+                if (m_packet.code_as_byte() == GET
+                    && core_link::is_attribute_matched("rt", "firmware", *attribute_iterator))
+                {
+                    path = "data/" + path;
+                    prepare_content_response(ec, OCTET_STREAM, path.c_str());
+                    EXIT_TRACE();
+                    return;
+                }
             }
             attribute_iterator = core_link::find_attribute("ct", *iter);
-            if (attribute_iterator != iter->parameters.end()
-                && core_link::is_attribute_matched("ct", static_cast<unsigned long>(LINK_FORMAT), *attribute_iterator))
+            if (attribute_iterator != iter->parameters.end())
             {
-                records.push_back(*iter);
-                prepare_core_link_response(records, ec);
-                EXIT_TRACE();
-                return;
+                if (m_packet.code_as_byte() == GET
+                    && core_link::is_attribute_matched("ct", static_cast<unsigned long>(LINK_FORMAT), *attribute_iterator))
+                {
+                    records.push_back(*iter);
+                    prepare_core_link_response(records, ec);
+                    EXIT_TRACE();
+                    return;
+                }
             }
             attribute_iterator = core_link::find_attribute("if", *iter);
-            if (attribute_iterator != iter->parameters.end()
-                && core_link::is_attribute_matched("if", "sensor", *attribute_iterator))
+            if (attribute_iterator != iter->parameters.end())
             {
-                prepare_senml_json_response(*iter, ec);
-                EXIT_TRACE();
-                return;
+                if (core_link::is_attribute_matched("if", "sensor", *attribute_iterator))
+                {
+                    vector<SenmlJsonType> payload;
+                    if (m_packet.code_as_byte() == GET)
+                    {
+                        process_sensor_endpoint(*iter, nullptr, &payload, ec);
+                        if (ec.value())
+                        {
+                            EXIT_TRACE();
+                            return;    
+                        } 
+                        prepare_senml_json_response(payload, ec);
+                    }
+                    else if (m_packet.code_as_byte() == PUT)
+                    {
+                        // fill Senml-Json payload from packet
+                        fill_senml_json_payload(payload, ec);
+                        if (ec.value())
+                        {
+                            EXIT_TRACE();
+                            return;    
+                        }                        
+                        process_sensor_endpoint(*iter, &payload, nullptr, ec);
+                        if (ec.value())
+                        {
+                            EXIT_TRACE();
+                            return;    
+                        }
+                        //prepare answer on PUT
+                        prepare_acknowledge_response(ec, CHANGED);
+                    }
+                    else
+                        ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
+                    EXIT_TRACE();
+                    return;
+                }
             }
         }
-        else
+        else if (m_packet.code_as_byte() == GET) // only for GET request
         {
             CoreLinkType record;
             bool status = core_link::create_record_from_path_if_contains(path.c_str(), *iter, record, ec);
