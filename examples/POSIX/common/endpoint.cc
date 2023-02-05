@@ -31,7 +31,7 @@ Endpoint &Endpoint::operator=(Endpoint &&other)
 	return *this;		
 }
 
-EndpointPool::EndpointPool(std::vector<EndpointType> &endpoints)
+EndpointPool::EndpointPool(const std::vector<EndpointType> &endpoints)
 {
 	for (std::vector<EndpointType>::const_iterator iter = endpoints.begin(), end = endpoints.end(); iter != end; ++iter )
 		m_endpoints.push_back(std::move(Endpoint(*iter)));

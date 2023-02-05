@@ -71,7 +71,7 @@ public:
 	EndpointPool()
 	: m_endpoints{}
 	{}
-	EndpointPool(std::vector<EndpointType> &endpoints);
+	EndpointPool(const std::vector<EndpointType> &endpoints);
 	~EndpointPool()
 	{}
 

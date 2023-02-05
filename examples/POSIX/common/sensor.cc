@@ -10,14 +10,8 @@ const char *sensor_type_to_string(SensorType type)
 {
 	switch(type)
 	{
-	case TEMPERATURE:
-		return "TEMPERATURE";
-	case HUMIDITY:
-		return "HUMIDITY";
-	case DOUBLE_TEMP_HUM:
-		return "DOUBLE_TEMP_HUM";
-	case AXELEROMETER:
-		return "AXELEROMETER";
+	case DHT11:
+		return "DHT11";
 	case RGB_LED:
 		return "RGB_LED";
 	default:

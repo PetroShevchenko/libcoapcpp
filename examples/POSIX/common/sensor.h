@@ -11,19 +11,23 @@ namespace sensors
 
 enum SensorType
 {
-	TEMPERATURE,
-	HUMIDITY,
-	DOUBLE_TEMP_HUM,
-	AXELEROMETER,
+	DHT11,
 	RGB_LED,
 	SENSOR_QTY
 };
-#define SENSOR_TYPE_MIN TEMPERATURE
+#define SENSOR_TYPE_MIN DHT11
 #define is_sensor_type_correct(type) (type < SENSOR_QTY && type >= SENSOR_TYPE_MIN)
 
 const char *sensor_type_to_string(SensorType type);
 
+class Sensor;
 class SensorSet;
+
+typedef struct
+{
+    Sensor *sensor;
+    SensorSet *set;
+} SensorBindType;
 
 class Sensor
 {

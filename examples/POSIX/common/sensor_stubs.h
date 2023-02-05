@@ -9,7 +9,7 @@ class DHT11_Simulator : public Sensor
 {
 public:
 	DHT11_Simulator()
-	: Sensor("DHT11_Simulator", DOUBLE_TEMP_HUM)
+	: Sensor("DHT11_Simulator", DHT11)
 	{}
 	~DHT11_Simulator() override
 	{}

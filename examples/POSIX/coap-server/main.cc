@@ -62,6 +62,19 @@ static DHT11_Simulator g_DHT11;
 
 static RGB_LED_Simulator g_RGB_LED;
 
+static const std::vector<EndpointType> g_endpoints = {
+    { "sensors/DHT11/temp", DHT11, &g_KS0068 },
+    { "sensors/DHT11/hum", DHT11, &g_KS0068 },
+    { "sensors/RGB_LED/red", RGB_LED, &g_KS0068 },
+    { "sensors/RGB_LED/green", RGB_LED, &g_KS0068 },
+    { "sensors/RGB_LED/blue", RGB_LED, &g_KS0068 }
+};
+
+static const std::vector<SensorBindType> g_bindingInfo = {
+    { &g_DHT11, &g_KS0068},
+    { &g_RGB_LED, &g_KS0068}
+};
+
 static void usage()
 {
     std::cerr << "Usage: coap-server [OPTIONS]\n";
@@ -147,7 +160,7 @@ static void signal_handler(int signo)
     }
 }
 
-static EndpointPool *create_sensor_endpoints(const char *coreLinkContent, error_code &ec)
+static EndpointPool *create_sensor_endpoints(const char *coreLinkContent, const vector<EndpointType> &endpoints, error_code &ec)
 {
     coap::CoreLink parser;
     parser.parse_core_link(coreLinkContent, ec);
@@ -155,13 +168,6 @@ static EndpointPool *create_sensor_endpoints(const char *coreLinkContent, error_
     {
         return nullptr;
     }
-    std::vector<EndpointType> endpoints = {
-        { "sensors/DHT11/temp", DOUBLE_TEMP_HUM, &g_KS0068 },
-        { "sensors/DHT11/hum", DOUBLE_TEMP_HUM, &g_KS0068 },
-        { "sensors/RGB_LED/red", RGB_LED, &g_KS0068 },
-        { "sensors/RGB_LED/green", RGB_LED, &g_KS0068 },
-        { "sensors/RGB_LED/blue", RGB_LED, &g_KS0068 }
-    };
 
     static EndpointPool endpointPool(endpoints);
 
@@ -174,13 +180,14 @@ static EndpointPool *create_sensor_endpoints(const char *coreLinkContent, error_
     return &endpointPool;
 }
 
-static void initialize_sensors(error_code &ec)
+static void initialize_sensors(const std::vector<SensorBindType> &bindingInfo, error_code &ec)
 {
-    g_DHT11.bind(g_KS0068, ec);
-    if (ec.value())
-        return;
-
-    g_RGB_LED.bind(g_KS0068, ec);
+    for (auto record : bindingInfo)
+    {
+        record.sensor->bind(*record.set, ec);
+        if (ec.value())
+            return;
+    }
 }
 
 static void initialize_connection(bool useIPv4, uint16_t portnum, UdpConnectionType &conn, error_code &ec)
@@ -253,7 +260,7 @@ int main(int argc, char **argv)
 
     error_code ec;
 
-    EndpointPool *endpoints = create_sensor_endpoints(coreLinkContent.c_str(), ec);
+    EndpointPool *endpoints = create_sensor_endpoints(coreLinkContent.c_str(), g_endpoints, ec);
     if (ec.value())
     {
         error("{}", ec.message());
@@ -261,7 +268,7 @@ int main(int argc, char **argv)
     }
     info("Endpoints initialized");
 
-    initialize_sensors(ec);
+    initialize_sensors(g_bindingInfo, ec);
     if (ec.value())
     {
         error("{}", ec.message());
