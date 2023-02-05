@@ -42,6 +42,11 @@ TEST(testSenmlJson, createJson)
 	parser.clear_payload();
 
 {
+	SenmlJsonType record("light", "%", SenmlJsonType::Value(100.0), get_timestamp());
+    parser.add_record(record);
+}
+
+{
 	SenmlJsonType record("test_str", "chars", SenmlJsonType::Value("text1"), get_timestamp());
     parser.add_record(record);
 }

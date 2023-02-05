@@ -336,6 +336,7 @@ void CoapServer::serialize_response(std::error_code &ec)
     ENTER_TRACE();
     size_t length = m_message->length();
     m_packet.serialize(ec, m_message->data(), length);
+    m_packet.payload().clear(); // to prevent this payload from being used in the next message
     if (ec.value())
     {
         EXIT_TRACE();
@@ -664,13 +665,13 @@ void CoapServer::fill_senml_json_payload(vector<SenmlJsonType> &payload, std::er
     }
     std::string json(m_packet.payload().begin(), m_packet.payload().end());
     SenmlJson parser;
-
     parser.parse_json(json.c_str(), ec);
     if (ec.value())
     {
         EXIT_TRACE();
         return;        
     }
+    payload.clear();
     std::copy(parser.payload().begin(), parser.payload().end(),
         std::back_inserter(payload));
     EXIT_TRACE();
