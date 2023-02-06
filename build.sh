@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TARGET=POSIX
-#TARGET=RASPBERRY-PI
+#TARGET=RASPBERRY-PI-4
 #TARGET=STM32MP157A-DK1
 #TARGET=NUCLEO-F429ZI
 #TARGET=NUCLEO-H743ZI
@@ -51,14 +51,14 @@ if [ "$TARGET" = "POSIX" ];then
         echo "Error : BUILD_TYPE isn't specified"
     fi
 
-elif [ "$TARGET" = "RASPBERRY-PI" ];then
+elif [ "$TARGET" = "RASPBERRY-PI-4" ];then
         if [[ $1 = "clean" ]] ; then
-            rm -rf "build/RASPBERRY-PI"
+            rm -rf "build/RASPBERRY-PI-4"
             exit 0
         fi
-        mkdir -p "build/RASPBERRY-PI"
-        cd "build/RASPBERRY-PI" && cmake ../.. && make -j$(nproc || echo 2)
-        mkdir -p examples && cd examples && cmake "../../../examples/RASPBERRY-PI" && make -j$(nproc || echo 2)
+        mkdir -p "build/RASPBERRY-PI-4"
+        cd "build/RASPBERRY-PI-4" && cmake ../.. && make -j$(nproc || echo 2)
+        mkdir -p examples && cd examples && cmake "../../../examples/RASPBERRY-PI-4" && make -j$(nproc || echo 2) install
 
 elif [ "$TARGET" = "STM32MP157A-DK1" ];then
         if [[ $1 = "clean" ]] ; then

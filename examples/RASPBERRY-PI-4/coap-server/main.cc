@@ -1,6 +1,6 @@
 #if defined(__unix__) || defined(__APPLE__)
-#ifdef __arm__
-#warning "You are going to compile this code for ARM platform"
+#if defined(__x86_64__) || defined(__i386__) || defined(__amd64__)
+#error "You are going to compile this code for x86 platform, but it is only for ARM"
 #endif
 
 #include "coap_server.h"
