@@ -1,0 +1,2 @@
+petro@raspberrypi:~/libcoapcpp/build/RASPBERRY-PI-4/lib$ echo export LD_LIBRARY_PATH=~/libcoapcpp/build/RASPBERRY-PI-4/lib:\$LD_LIBRARY_PATH >> ~/.bashrc
+petro@raspberrypi:~/libcoapcpp/build/RASPBERRY-PI-4/examples/bin$ sudo ldconfig

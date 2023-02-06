@@ -15,7 +15,7 @@ void RgbLed::init(std::error_code &ec)
 {
 	ENTER_TRACE();
 	TRACE("*****************************************\n");
-	TRACE("* RGB_LED Sensor initialization    *\n");
+	TRACE("* RGB_LED Sensor initialization         *\n");
 	TRACE("*****************************************\n");
 	if (wiringPiSetup() == -1)
 	{
@@ -23,9 +23,10 @@ void RgbLed::init(std::error_code &ec)
 		EXIT_TRACE();
 		return;
 	}
-    softPwmCreate(m_redLedPin,  0, 100);  //create a soft pwm, original duty cycle is 0Hz, range is 0~100   
-    softPwmCreate(m_greenLedPin,0, 100);  
-    softPwmCreate(m_blueLedPin, 0, 100); 
+
+    softPwmCreate(m_redLedPin,  100, 100);
+    softPwmCreate(m_greenLedPin,100, 100);
+    softPwmCreate(m_blueLedPin, 100, 100);
 	EXIT_TRACE();
 }
 
@@ -82,11 +83,13 @@ void RgbLed::handler(
 		{
 			m_greenLight = (*in)[0].value.asNumber;
 			softPwmWrite(m_greenLedPin,   100 - m_greenLight);
+			//digitalWrite(m_greenLedPin, LOW);
 			TRACE("*** Green Light: ", (int)m_greenLight, "\n");
 		}
 		else if (endpoint == "blue")
 		{
 			m_blueLight = (*in)[0].value.asNumber;
+			//digitalWrite(m_blueLedPin, LOW);
 			softPwmWrite(m_blueLedPin,   100 - m_blueLight);
 			TRACE("*** Blue Light: ", (int)m_blueLight, "\n");
 		}

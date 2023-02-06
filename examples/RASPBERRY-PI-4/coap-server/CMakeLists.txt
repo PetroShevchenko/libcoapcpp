@@ -72,4 +72,6 @@ target_link_libraries(
         pthread
         wolfssl
         cjson
+        wiringPi
+        wiringPiDev
 )

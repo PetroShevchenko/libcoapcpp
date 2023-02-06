@@ -31,8 +31,8 @@ private:
 
 private:
 	int m_dataPin;
-	const size_t dataLen = 5; 
-	uint8_t m_value[dataLen];
+	static const size_t s_dataLen = 5;
+	uint8_t m_value[s_dataLen];
 };
 
 } //namespace sensors

@@ -11,7 +11,7 @@ public:
 	RgbLed(int redLedPin, int greenLedPin, int blueLedPin)
 	: Sensor("RGB_LED Sensor", RGB_LED),
 	  m_redLedPin{redLedPin},
-	  m_greeLednPin{greenLedPin},
+	  m_greenLedPin{greenLedPin},
 	  m_blueLedPin{blueLedPin},
 	  m_redLight{0},
 	  m_greenLight{0},

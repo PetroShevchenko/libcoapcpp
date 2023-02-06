@@ -69,8 +69,8 @@ static UdpConnectionType g_connection;
 static SensorSet g_KS0068;
 
 #ifdef __arm__
-static RgbLed g_RGB_LED(0, 1, 2); // RED: PIN 0, GREEN: PIN 1, BLUE: PIN2
-static Dht11 g_DHT11(3); // DATA: PIN 3
+static RgbLed g_RGB_LED(8, 9, 7); // RED: GPIO 2, GREEN: GPIO 3, BLUE: GPIO 4
+static Dht11 g_DHT11(15); // DATA: GPIO 14
 #else
 static RGB_LED_Simulator g_RGB_LED;
 static DHT11_Simulator g_DHT11();

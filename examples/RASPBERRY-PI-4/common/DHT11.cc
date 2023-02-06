@@ -38,7 +38,7 @@ void Dht11::handler(
 	ENTER_TRACE();
 	(void)in;
 	TRACE("*****************************************\n");
-	TRACE("*      DHT11 Sensor Stub                *\n");
+	TRACE("*      DHT11 Sensor                     *\n");
 	TRACE("* (temperature and humidity)            *\n");
 	TRACE("*****************************************\n");	
 	if (out == nullptr)
@@ -94,15 +94,15 @@ void Dht11::handler(
 	}
 	EXIT_TRACE();
 }
-
+#define MAX_TIME 85
 bool Dht11::read_value()
 {
 	ENTER_TRACE();
     uint8_t lastState = HIGH;         //last state
     uint8_t counter=0;
-    uint8_t j = 0;
+    size_t j = 0, i;
 
-	memset(m_data, 0, m_dataLen);
+	memset(m_value, 0, s_dataLen);
 
     //host send start signal    
     pinMode(m_dataPin, OUTPUT);      //set pin to output 
@@ -138,13 +138,15 @@ bool Dht11::read_value()
     // verify checksum and print the verified data
     if((j >= 40) && (m_value[4] == ((m_value[0] + m_value[1] + m_value[2] + m_value[3]) & 0xFF)))
     {
-        TRACE("RH: ", m_value[0], "TEMP: ",  m_value[2], "\n");
+        TRACE("RH: ", m_value[0], " TEMP: ",  m_value[2], "\n");
         EXIT_TRACE();
         return true;
     }
     else
-        return false;
-    EXIT_TRACE();
+	{
+		EXIT_TRACE();
+	    return false;
+	}
 }
 
 } // namespace sensors
