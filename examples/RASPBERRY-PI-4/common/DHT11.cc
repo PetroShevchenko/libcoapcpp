@@ -10,6 +10,14 @@ using namespace posix;
 using namespace coap;
 using namespace std;
 
+enum DhtDelay {
+	DHT11_DELAY_STEP_USEC = 10,
+	DHT11_START_DELAY_MSEC = 20,
+	DHT11_START_WAIT_RESP_MAX_USEC = 40,
+	DHT11_ACK_LOW_STATE_USEC = 80,
+	DHT11_ACK_HIGHT_STATE_USEC = 80,
+};
+
 namespace sensors
 {
 
@@ -19,12 +27,12 @@ void Dht11::init(std::error_code &ec)
 	TRACE("*****************************************\n");
 	TRACE("* DHT11 Sensor initialization           *\n");
 	TRACE("*****************************************\n");
- 	if (wiringPiSetup()==-1)
- 	{
- 		ec = make_system_error(EFAULT);
- 		EXIT_TRACE();
- 		return;	
- 	}
+	if (wiringPiSetup()==-1)
+	{
+		ec = make_system_error(SensorStatus::SENSOR_ERR_WIRING_PI_SETUP);
+		EXIT_TRACE();
+		return;	
+	}
 	EXIT_TRACE();
 }
 
@@ -64,9 +72,10 @@ void Dht11::handler(
 		EXIT_TRACE();
 		return;
 	}
-	if (!read_value())
+	SensorStatus status = read_data();
+	if (status != SENSOR_OK)
 	{
-		ec = make_system_error(EFAULT);
+		ec = make_error_code(status);
 		EXIT_TRACE();
 		return;
 	}
@@ -75,78 +84,95 @@ void Dht11::handler(
 		SenmlJsonType record(
 							"temperature",
 							"Cel",
-							SenmlJsonType::Value((double)m_value[2]),
+							SenmlJsonType::Value((double)m_data[2]),
 							get_timestamp()
 						);
 		out->push_back(move(record));
-		TRACE("DHT11 Sensor : TEMPERATURE:", (double)m_value[2], " C\n");
+		TRACE("DHT11 Sensor : TEMPERATURE:", (double)m_data[2], " C\n");
 	}
 	else
 	{
 		SenmlJsonType record(
 							"humidity",
 							"%RH",
-							SenmlJsonType::Value((double)m_value[0]),
+							SenmlJsonType::Value((double)m_data[0]),
 							get_timestamp()
 						);
 		out->push_back(move(record));
-		TRACE("DHT11 Sensor : HUMIDITY: ", (double)m_value[0], " %\n");
+		TRACE("DHT11 Sensor : HUMIDITY: ", (double)m_data[0], " %\n");
 	}
 	EXIT_TRACE();
 }
-#define MAX_TIME 85
-bool Dht11::read_value()
+
+bool Dht11::is_data_correct()
 {
-	ENTER_TRACE();
-    uint8_t lastState = HIGH;         //last state
-    uint8_t counter=0;
-    size_t j = 0, i;
+	uint8_t crc = 0;
+	const size_t crcIndex = s_dataLen - 1;
+	for(size_t i = 0; i < crcIndex; i++)
+		crc += m_data[i];
+	return (crc == m_data[crcIndex]);
+}
 
-	memset(m_value, 0, s_dataLen);
+bool Dht11::wait_while_status(size_t usTimeout, bool initStatus)
+{
+	size_t counter = usTimeout / DHT11_DELAY_STEP_USEC;
+	bool status = initStatus;
+	do {
+		delayMicroseconds(DHT11_DELAY_STEP_USEC);
+		status = (digitalRead(m_dataPin) == HIGH);
+	} while((status == initStatus) && --counter);
+	return status;
+}
 
-    //host send start signal    
-    pinMode(m_dataPin, OUTPUT);      //set pin to output 
-    digitalWrite(m_dataPin, LOW);    //set to low at least 18ms 
-    delay(18);
-    digitalWrite(m_dataPin, HIGH);   //set to high 20-40us
-    delayMicroseconds(40);
-     
-    //start recieve dht response
-    pinMode(m_dataPin, INPUT);       //set pin to input
-    for(i = 0; i < MAX_TIME; i++)         
-    {
-        counter=0;
-        while(digitalRead(m_dataPin) == lastState)
-        {  //read pin state to see if dht responsed. if dht always high for 255 + 1 times, break this while circle
-            counter++;
-            delayMicroseconds(1);
-            if(counter==255)
-                break;
-        }
-        lastState = digitalRead(m_dataPin);   //read current state and store as last state. 
-        if(counter==255)         	//if dht always high for 255 + 1 times, break this for circle
-            break;
-        // top 3 transistions are ignored, maybe aim to wait for dht finish response signal
-        if((i >= 4) && ( i % 2 == 0))
-        {
-            m_value[j/8] <<= 1;		//write 1 bit to 0 by moving left (auto add 0)
-            if(counter > 16)		//long mean 1
-                m_value[j/8] |= 1;	//write 1 bit to 1 
-            j++;
-        }
-    }
-    // verify checksum and print the verified data
-    if((j >= 40) && (m_value[4] == ((m_value[0] + m_value[1] + m_value[2] + m_value[3]) & 0xFF)))
-    {
-        TRACE("RH: ", m_value[0], " TEMP: ",  m_value[2], "\n");
-        EXIT_TRACE();
-        return true;
-    }
-    else
+/* The first DHT11's state is START CONDITION */
+bool Dht11::start_condition()
+{
+	pinMode(m_dataPin, OUTPUT);
+	digitalWrite(m_dataPin, LOW);
+	delay(DHT11_START_DELAY_MSEC);
+	digitalWrite(m_dataPin, HIGH);
+	pinMode(m_dataPin, INPUT);
+	return (wait_while_status(DHT11_START_WAIT_RESP_MAX_USEC, true) == false);
+}
+
+/* The second DHT11's state is READ ACKNOWLEDGE */
+bool Dht11::read_acknowledge()
+{
+	wait_while_status(DHT11_ACK_LOW_STATE_USEC, false);
+	return (wait_while_status(DHT11_ACK_HIGHT_STATE_USEC, true) == false);
+}
+
+/* The third DHT11's state is READ DATA BYTES */
+bool Dht11::read_data_byte(uint8_t &byte)
+{
+	byte = 0;
+	for(int i = 7 ; i >= 0; i--)
 	{
-		EXIT_TRACE();
-	    return false;
+		wait_while_status(DHT11_DATA_START_USEC, false);
+		if (wait_while_status(DHT11_DATA_READ_LOW_MAX_USEC, true) == false)
+			continue;
+		if (wait_while_status(DHT11_DATA_READ_HIGHT_USEC, true) == false)
+			byte |= (1 << i);
+		else
+			return false;
 	}
+	return true;
+}
+
+SensorStatus Dht11::read_data()
+{
+	if (!start_condition())
+		return SENSOR_ERR_DHT11_START_CONDITION;
+	if (!read_acknowledge())
+		return SENSOR_ERR_DHT11_READ_ACK;
+	for (size_t i = 0; i < s_dataLen; i++)
+	{
+		if (!read_data_byte (m_data[i]))
+			return SENSOR_ERR_DHT11_READ_DATA;
+	}
+	if (!is_data_correct())
+		return SENSOR_ERR_DHT11_CRC;
+	return SENSOR_OK;
 }
 
 } // namespace sensors

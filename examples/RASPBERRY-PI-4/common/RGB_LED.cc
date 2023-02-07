@@ -3,6 +3,7 @@
 #include "RGB_LED.h"
 #include "trace.h"
 #include "timestamp.h"
+#include "sensor_error.h"
 
 using namespace posix;
 using namespace coap;
@@ -19,7 +20,7 @@ void RgbLed::init(std::error_code &ec)
 	TRACE("*****************************************\n");
 	if (wiringPiSetup() == -1)
 	{
-		ec = make_system_error(EFAULT);
+		ec = make_system_error(SensorStatus::SENSOR_ERR_WIRING_PI_SETUP);
 		EXIT_TRACE();
 		return;
 	}

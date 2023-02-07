@@ -1,6 +1,7 @@
 #ifndef _DHT11_H
 #define _DHT11_h
 #include "sensor.h"
+#include "sensor_error.h"
 
 namespace sensors
 {
@@ -11,7 +12,7 @@ public:
 	Dht11(int dataPin)
 	: Sensor("DHT11 Temperature/Humidity Sensor", DHT11),
 	  m_dataPin{dataPin},
-	  m_value{0,}
+	  m_data{0,}
 	{}
 	~Dht11() override
 	{}
@@ -27,12 +28,20 @@ private:
 			std::error_code &ec) override;
 
 private:
-	bool read_value();
+	inline bool is_data_correct();
+	inline bool wait_while_status(size_t usTimeout, bool initStatus);
+	inline bool start_condition();
+	inline bool read_acknowledge();
+	inline bool read_data_byte(uint8_t &byte);
+
+
+private:
+	SensorStatus read_data();
 
 private:
 	int m_dataPin;
 	static const size_t s_dataLen = 5;
-	uint8_t m_value[s_dataLen];
+	uint8_t m_data[s_dataLen];
 };
 
 } //namespace sensors
