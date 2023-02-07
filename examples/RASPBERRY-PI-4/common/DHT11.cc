@@ -11,11 +11,14 @@ using namespace coap;
 using namespace std;
 
 enum DhtDelay {
-	DHT11_DELAY_STEP_USEC = 10,
+	DHT11_DELAY_STEP_USEC = 1,
 	DHT11_START_DELAY_MSEC = 20,
 	DHT11_START_WAIT_RESP_MAX_USEC = 40,
 	DHT11_ACK_LOW_STATE_USEC = 80,
 	DHT11_ACK_HIGHT_STATE_USEC = 80,
+	DHT11_DATA_START_USEC = 50,
+	DHT11_DATA_READ_LOW_MAX_USEC = 28,
+	DHT11_DATA_READ_HIGHT_USEC = 70,
 };
 
 namespace sensors
@@ -29,10 +32,14 @@ void Dht11::init(std::error_code &ec)
 	TRACE("*****************************************\n");
 	if (wiringPiSetup()==-1)
 	{
-		ec = make_system_error(SensorStatus::SENSOR_ERR_WIRING_PI_SETUP);
+		ec = make_error_code(SensorStatus::SENSOR_ERR_WIRING_PI_SETUP);
 		EXIT_TRACE();
 		return;	
 	}
+	pinMode(m_dataPin, OUTPUT);
+	pullUpDnControl(m_dataPin, PUD_DOWN);
+	digitalWrite(m_dataPin, HIGH);
+
 	EXIT_TRACE();
 }
 
@@ -104,7 +111,7 @@ void Dht11::handler(
 	EXIT_TRACE();
 }
 
-bool Dht11::is_data_correct()
+inline bool Dht11::is_data_correct()
 {
 	uint8_t crc = 0;
 	const size_t crcIndex = s_dataLen - 1;
@@ -113,7 +120,7 @@ bool Dht11::is_data_correct()
 	return (crc == m_data[crcIndex]);
 }
 
-bool Dht11::wait_while_status(size_t usTimeout, bool initStatus)
+inline bool Dht11::wait_while_status(size_t usTimeout, bool initStatus)
 {
 	size_t counter = usTimeout / DHT11_DELAY_STEP_USEC;
 	bool status = initStatus;
@@ -125,9 +132,10 @@ bool Dht11::wait_while_status(size_t usTimeout, bool initStatus)
 }
 
 /* The first DHT11's state is START CONDITION */
-bool Dht11::start_condition()
+inline bool Dht11::start_condition()
 {
 	pinMode(m_dataPin, OUTPUT);
+	pullUpDnControl(m_dataPin, PUD_DOWN);
 	digitalWrite(m_dataPin, LOW);
 	delay(DHT11_START_DELAY_MSEC);
 	digitalWrite(m_dataPin, HIGH);
@@ -136,14 +144,14 @@ bool Dht11::start_condition()
 }
 
 /* The second DHT11's state is READ ACKNOWLEDGE */
-bool Dht11::read_acknowledge()
+inline bool Dht11::read_acknowledge()
 {
 	wait_while_status(DHT11_ACK_LOW_STATE_USEC, false);
 	return (wait_while_status(DHT11_ACK_HIGHT_STATE_USEC, true) == false);
 }
 
 /* The third DHT11's state is READ DATA BYTES */
-bool Dht11::read_data_byte(uint8_t &byte)
+inline bool Dht11::read_data_byte(uint8_t &byte)
 {
 	byte = 0;
 	for(int i = 7 ; i >= 0; i--)
@@ -159,7 +167,7 @@ bool Dht11::read_data_byte(uint8_t &byte)
 	return true;
 }
 
-SensorStatus Dht11::read_data()
+inline SensorStatus Dht11::read_data()
 {
 	if (!start_condition())
 		return SENSOR_ERR_DHT11_START_CONDITION;
@@ -169,6 +177,7 @@ SensorStatus Dht11::read_data()
 	{
 		if (!read_data_byte (m_data[i]))
 			return SENSOR_ERR_DHT11_READ_DATA;
+		delayMicroseconds(DHT11_DELAY_STEP_USEC);
 	}
 	if (!is_data_correct())
 		return SENSOR_ERR_DHT11_CRC;

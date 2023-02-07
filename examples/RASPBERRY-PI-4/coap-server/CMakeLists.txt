@@ -34,11 +34,13 @@ set(
         ${SRC_DIR}/main.cc
         ${COMMON_DIR}/DHT11.cc
         ${COMMON_DIR}/RGB_LED.cc
+        ${COMMON_DIR}/sensor_error.cc
         ${COMMON_POSIX_DIR}/coap_server.cc
         ${COMMON_POSIX_DIR}/sensor.cc
         ${COMMON_POSIX_DIR}/endpoint.cc
         ${COMMON_DIR}/DHT11.h
         ${COMMON_DIR}/RGB_LED.h
+        ${COMMON_DIR}/sensor_error.h
         ${COMMON_POSIX_DIR}/sensor.h
         ${COMMON_POSIX_DIR}/trace.h
         ${COMMON_POSIX_DIR}/coap_server.h
