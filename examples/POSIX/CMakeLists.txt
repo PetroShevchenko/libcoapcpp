@@ -7,3 +7,4 @@ set(POSIX_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(COMMON_DIR ${POSIX_DIR}/common)
 
 add_subdirectory(${POSIX_DIR}/coap-server)
+add_subdirectory(${POSIX_DIR}/coap-client)

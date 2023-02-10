@@ -143,6 +143,12 @@ std::string CoapErrorCategory::message(int ev) const
         case CoapStatus::COAP_ERR_ENDPOINT_ANSWER:
             return "Failed to get answer from endpoint";
 
+        case CoapStatus::COAP_ERR_RECORD_FORMAT:
+            return "Wrong record format";
+
+        case CoapStatus::COAP_ERR_BLOCK_SIZE:
+            return "Wrong Block Size";
+
         case CoapStatus::COAP_ERR_BAD_REQUEST:
             return "4.00 Bad Request";
 
