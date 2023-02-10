@@ -73,7 +73,7 @@ static RgbLed g_RGB_LED(0, 1, 2); // RED: PIN 0, GREEN: PIN 1, BLUE: PIN2
 static Dht11 g_DHT11(3); // DATA: PIN 3
 #else
 static RGB_LED_Simulator g_RGB_LED;
-static DHT11_Simulator g_DHT11();
+static DHT11_Simulator g_DHT11;
 #endif
 
 static const std::vector<EndpointType> g_endpoints = {
