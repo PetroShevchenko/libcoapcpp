@@ -1,4 +1,5 @@
 #include "coap_client.h"
+#include "packet_helper.h"
 #include "trace.h"
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>

@@ -1,4 +1,5 @@
 #include "coap_server.h"
+#include "packet_helper.h"
 #include "trace.h"
 #include "core_link.h"
 #include "utils.h"
@@ -63,63 +64,6 @@ void CoapServer::done(void *data)
 {
     ((CoapServer *)data)->done();
 }
-
-enum MessageDirection {
-    INCOMMING,
-    OUTGOING
-};
-
-static const char *coap_options_to_string(coap::Packet &packet)
-{
-    static string line;
-    line.clear();
-    for(auto opt: packet.options())
-    {
-        line += coap_option_number_to_string(static_cast<OptionNumber>(opt.number()));
-        line += " ";
-    }
-    return line.c_str();
-}
-
-static void log_packet(MessageDirection direction, coap::Packet &packet)
-{
-    string line;
-    line = (direction == INCOMMING) ? "<-- " : "--> ";
-    line += "CoAP message: Type: {}; Code: {}; MID: {}; Token({})";
-    line += packet.token_length() ? ": {:n}" : "{}";
-    line += "; Options({}): ";
-    line += coap_options_to_string(packet);
-    info(line.c_str(),
-            coap_message_type_to_string(static_cast<MessageType>(packet.type())),
-            coap_message_code_to_string(static_cast<MessageCode>(packet.code_as_byte())),
-            (int)packet.identity(),
-            packet.token_length(),
-            packet.token_length() ? to_hex(packet.token().begin(), packet.token().end()): to_hex(packet.token().begin(), packet.token().begin()),
-            packet.options().size()
-        );
-}
-
-#ifdef TRACE_CODE
-#define TRACE_PACKET(packet) do{\
-    TRACE("COAP message: Type: ", coap_message_type_to_string(static_cast<MessageType>(packet.type())),\
-             "; Code: ", coap_message_code_to_string(static_cast<MessageCode>(packet.code_as_byte())),\
-             "; MID: ", (int)packet.identity(),\
-             "; Token(", (int)packet.token_length(), ")\n");\
-    if (packet.token_length()) {\
-        TRACE("Token content:\n");\
-        TRACE_ARRAY(packet.token());\
-    }\
-    if (packet.options().size()) {\
-        TRACE("Options(", (int)packet.options().size(), "): ", coap_options_to_string(packet), "\n");\
-    }\
-    if (packet.payload().size()) {\
-        TRACE("Payload content:\n");\
-        TRACE_ARRAY(packet.payload());\
-    }\
-}while(0)
-#else
-#define TRACE_PACKET(packet)
-#endif
 
 void CoapServer::parse_incomming_coap_packet()
 {

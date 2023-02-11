@@ -27,8 +27,10 @@ set(
     SRC_LIST
         ${SRC_DIR}/main.cc
         ${COMMON_DIR}/coap_client.cc
+        ${COMMON_DIR}/packet_helper.cc
         ${COMMON_DIR}/coap_client.h
         ${COMMON_DIR}/trace.h
+        ${COMMON_DIR}/packet_helper.h
 )
 
 add_definitions(-DTRACE_CODE)

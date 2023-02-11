@@ -36,11 +36,13 @@ set(
         ${COMMON_DIR}/sensor.cc
         ${COMMON_DIR}/sensor_stubs.cc
         ${COMMON_DIR}/endpoint.cc
+        ${COMMON_DIR}/packet_helper.cc
         ${COMMON_DIR}/sensor.h
         ${COMMON_DIR}/sensor_stubs.h
         ${COMMON_DIR}/trace.h
         ${COMMON_DIR}/coap_server.h
         ${COMMON_DIR}/endpoint.h
+        ${COMMON_DIR}/packet_helper.h
 )
 
 add_definitions(-DTRACE_CODE)

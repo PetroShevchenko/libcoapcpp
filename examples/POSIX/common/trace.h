@@ -3,6 +3,8 @@
 #include <iostream>
 #include <ios>
 #include <cstdint>
+#include <vector>
+#include <array>
 #include "buffer.h"
 
 namespace posix
