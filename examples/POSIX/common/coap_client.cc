@@ -68,6 +68,7 @@ CoapClient::CoapClient(
 	  m_running{false},
 	  m_received{false},
 	  m_doSend{false},
+	  m_doReceive{false},
 	  m_block{nullptr},
 	  m_fsaState{FSA_STATE_PREPARE_REQUEST},
 	  m_ec{}
@@ -75,12 +76,13 @@ CoapClient::CoapClient(
 	if (ec.value())
 		return;
 
+	size_t size = 0;// payload size for PUT, POST
+
 	if (!is_method_correct(method))
 	{
-		m_ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
+		ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
 		return;		
 	}
-
 	if (filename && method != METHOD_DELETE)
 	{
 		std::ios_base::openmode mode = (method == METHOD_GET) ? (std::ios::out | std::ios::binary | std::ios::app) : std::ios::in;
@@ -90,14 +92,18 @@ CoapClient::CoapClient(
 			ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
 			return;
 		}
-		// determine file size to set for block option
+		if (method == METHOD_PUT
+			|| method == METHOD_POST)// determine file size to set for block option
+		{
+			m_file->seekg(0, std::ios::end);
+			size = m_file->tellg();
+			m_file->seekg(0);
+		}
 	}
 	else if (m_payload
 			 && (method == METHOD_POST
-			 || method == METHOD_PUT))
-	{
-		// TODO determine payload size
-	}
+			 || method == METHOD_PUT))// determine payload size to set for block option
+		size = m_payload->size();
 	if (useBlockwise && method != METHOD_DELETE)
 	{
 		if (method == METHOD_PUT || method == METHOD_POST)
@@ -118,9 +124,11 @@ CoapClient::CoapClient(
 			return;
 		}
 		m_block->size(blockSize);
-		// set total for file or buffer
-		// set offset to zero			
+		m_block->total(size);
+		m_block->offset(0);
 	}
+	if (!useBlockwise && size > BUFFER_SIZE)
+		ec = make_error_code(CoapStatus::COAP_ERR_LARGE_PAYLOAD);
 }
 
 CoapClient::~CoapClient()
@@ -240,7 +248,8 @@ void CoapClient::prepare_get_request(std::error_code &ec)
 void CoapClient::prepare_post_request(std::error_code &ec)
 {
 	ENTER_TRACE();
-	if (m_method != METHOD_POST
+	ec = make_error_code(CoapStatus::COAP_ERR_NOT_IMPLEMENTED);
+/*	if (m_method != METHOD_POST
 		|| m_method != METHOD_PUT)
 	{
 		ec = make_error_code(CoapStatus::COAP_ERR_METHOD_NOT_ALLOWED);
@@ -256,11 +265,23 @@ void CoapClient::prepare_post_request(std::error_code &ec)
 	{
 		m_messageId = generate_identity();
 	}
-	// TODO
-	/*if (m_file)
+	size_t size;
+	if (m_file)
+	{
+		if (m_block)
+		{
+			size = ((Block1 *)m_block)->size();
+			m_file->seekg(((Block1 *)m_block)->offset());
+		}
+		else {
+
+		}
+
+	}
+	else if (m_payload)
 	{
 
-	}*/
+	}
 	m_packet.make_request(ec, CONFIRMABLE, m_method == METHOD_POST ? POST : PUT, m_messageId, nullptr, 0);
 	if (ec.value())
 	{
@@ -272,7 +293,7 @@ void CoapClient::prepare_post_request(std::error_code &ec)
 	{
 		EXIT_TRACE();
 		return;		
-	}
+	}*/
 	EXIT_TRACE();
 }
 
@@ -331,6 +352,7 @@ void CoapClient::prepare_request()
 		return;		
 	}
 	m_doSend = true; 							// need to send message
+	m_doReceive = false; 						// receiving is not expected
 	m_timeout = MAX_RECEIVE_TIMEOUT_IN_SECONDS; // receive timeout
 	m_fsaState = FSA_STATE_PARSE_RESPONSE;		// next state
 	EXIT_TRACE();
@@ -349,6 +371,7 @@ void CoapClient::parse_response()
 		return;		
 	}
 	m_doSend = false; 							// no need to send message
+	m_doReceive = false; 						// receiving is not expected
 	EXIT_TRACE();
 }
 
@@ -365,6 +388,7 @@ void CoapClient::processing_step()
     set_level(level::info);
     if (m_running && s_fsa_state_handler[m_fsaState])
         s_fsa_state_handler[m_fsaState](this);
+    m_timeout = m_doReceive ? MAX_RECEIVE_TIMEOUT_IN_SECONDS : 0;
 }
 
 } //namespace posix

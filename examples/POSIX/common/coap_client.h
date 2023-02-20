@@ -102,6 +102,9 @@ public:
 	void received(bool value)
 	{ m_received = value; }
 
+	coap::Packet &packet()
+	{ return m_packet; }
+
 private:
 	coap::MethodCode 	m_method;
 	int 				m_port;
@@ -118,6 +121,7 @@ private:
 	bool            	m_running;
 	bool 				m_received;
 	bool 				m_doSend;
+	bool                m_doReceive;
 	coap::Blockwise		*m_block;
 	FsaState 			m_fsaState;
 	std::error_code 	m_ec; 

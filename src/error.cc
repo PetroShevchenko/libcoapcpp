@@ -149,6 +149,9 @@ std::string CoapErrorCategory::message(int ev) const
         case CoapStatus::COAP_ERR_BLOCK_SIZE:
             return "Wrong Block Size";
 
+        case CoapStatus::COAP_ERR_LARGE_PAYLOAD:
+            return "The payload size is too large";
+
         case CoapStatus::COAP_ERR_BAD_REQUEST:
             return "4.00 Bad Request";
 

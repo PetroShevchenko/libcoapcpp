@@ -3,6 +3,7 @@
 #include "consts.h"
 #include "senml_json.h"
 #include "utils.h"
+#include "packet_helper.h"
 
 #include <iostream>
 #include <string>
@@ -271,7 +272,7 @@ static void records_to_payload(
             json.value.type = SenmlJsonType::NUMBER;
             json.value.asNumber = number;            
         }
-        parser.add_record(json);
+        parser.add_record(std::move(json));
     }
     ec.clear();
     parser.create_json(ec);
@@ -291,12 +292,17 @@ static void initialize_connection(const char * uri, UdpConnectionType &conn, err
         && !uri2hostname(uri, hostname, portnum, false)) {
         return;
     }
-    if (inet_pton(AF_INET, hostname.c_str(), &conn.serv.addr)) {// IPv4
+    uint16_t port = htons((uint16_t)portnum);// convert port number to the network order
+    if (inet_pton(AF_INET, hostname.c_str(), &conn.serv.addr.sin_addr.s_addr)) {// IPv4
         conn.useIPv4 = true;
+        conn.serv.addr.sin_family = AF_INET;
+        conn.serv.addr.sin_port = port;
         debug("conn.useIPv4: {}", conn.useIPv4);
     }
-    else if (inet_pton(AF_INET6, hostname.c_str(), &conn.serv.addr6)) {// IPv6
+    else if (inet_pton(AF_INET6, hostname.c_str(), &conn.serv.addr6.sin6_addr.s6_addr)) {// IPv6
         conn.useIPv4 = false;
+        conn.serv.addr6.sin6_family = AF_INET6;
+        conn.serv.addr6.sin6_port = port;
         debug("conn.useIPv4: {}", conn.useIPv4);
     }
     else {// resolve server name
@@ -304,7 +310,6 @@ static void initialize_connection(const char * uri, UdpConnectionType &conn, err
         if ((hp = gethostbyname(hostname.c_str())) == NULL) {
             return;
         }
-        uint16_t port = htons((uint16_t)portnum);// convert port number to the network order
         if (hp->h_addrtype == AF_INET) {
             bzero(&conn.serv.addr, sizeof(conn.serv.addr));
             bcopy(hp->h_addr, &conn.serv.addr.sin_addr, hp->h_length);
@@ -322,57 +327,10 @@ static void initialize_connection(const char * uri, UdpConnectionType &conn, err
         else {
             return;
         }
-
-
-/*
-typedef union 
-{
-    struct sockaddr_in addr;
-    struct sockaddr_in6 addr6;
-} SocketAddressType;
-
-typedef struct
-{
-    bool useIPv4;
-    SocketAddressType serv;
-    int socketFd;
-} UdpConnectionType;
-
-
-
-        struct addrinfo hints;
-        bzero(&hints, sizeof(hints));
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_DGRAM;
-
-        string portStr = to_string(portnum);
-        struct addrinfo * servinfo = nullptr;
-
-        int status = getaddrinfo(hostname.c_str(), portStr.c_str(), &hints, &servinfo);
-        if (result == 0) {
-            for (struct addrinfo *p = servinfo; p != nullptr; p = p->ai_next) {
-                if (p->ai_family == AF_INET6) {
-                    conn.useIPv4 = false;
-                    memcpy(conn.serv.addr6, ((struct sockaddr_in6 *) p->ai_addr)->sin6_addr, sizeof(conn.serv.addr6));
-                    break;
-                }
-                else if (p->ai_family == AF_INET) {
-                    conn.useIPv4 = true;
-                    memcpy(conn.serv.addr, ((struct sockaddr_in *) p->ai_addr)->sin_addr, sizeof(conn.serv.addr));
-                    break;
-                }
-            }
-        }
-        else {
-            ec = make_error_code(CoapStatus::COAP_ERR_RESOLVE_ADDRESS);
-            return;
-        }
-        if (servinfo != nullptr) {
-            freeaddrinfo(servinfo);
-        }*/
     }
     debug("portnum: {0:d}", portnum);
     debug("hostname: {}", hostname);
+
     int fd = socket(conn.useIPv4 ? AF_INET : AF_INET6, SOCK_DGRAM, 0);// create a new socket 
     if (fd == -1) {
         ec = make_error_code(CoapStatus::COAP_ERR_CREATE_SOCKET);
@@ -458,13 +416,15 @@ int main(int argc, char **argv)
 
     if (g_connection.useIPv4)
     {
-        server_addr = (struct sockaddr *)&server.addr;
         addr_len = sizeof(server.addr);
+        memcpy(&server.addr, &g_connection.serv.addr, addr_len);
+        server_addr = (struct sockaddr *)&server.addr;
     }
     else
     {
-        server_addr = (struct sockaddr *)&server.addr;
         addr_len = sizeof(server.addr6);
+        memcpy(&server.addr6, &g_connection.serv.addr6, addr_len);
+        server_addr = (struct sockaddr *)&server.addr6;
     }
 
     CoapClient client(
@@ -542,8 +502,10 @@ int main(int argc, char **argv)
         if (client.do_send())
         {
             ssize_t sent;
+            log_packet(OUTGOING, client.packet());
+
             if ((sent = sendto(sock, buf.data(), buf.offset(),  MSG_DONTWAIT, (const struct sockaddr *)server_addr, addr_len)) == -1)
-                error("sendto() returned -1");
+                error("sendto() returned -1, errno: {0:d}", errno);
             else
                 info("--> {0:d} bytes sent", sent);
         }

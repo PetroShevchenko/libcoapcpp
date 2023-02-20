@@ -579,13 +579,13 @@ void CoapServer::process_sensor_endpoint(
     EXIT_TRACE();
 }
 
-void CoapServer::prepare_senml_json_response(const vector<SenmlJsonType> &records, error_code &ec)
+void CoapServer::prepare_senml_json_response(vector<SenmlJsonType> &records, error_code &ec)
 {
     ENTER_TRACE();
     SenmlJson parser;
-    for (auto r : records)
+    for (auto &r : records)
     {
-        parser.add_record(r);
+        parser.add_record(move(r));
     }
     parser.create_json(ec);
     if (ec.value())
@@ -616,8 +616,9 @@ void CoapServer::fill_senml_json_payload(vector<SenmlJsonType> &payload, std::er
         return;        
     }
     payload.clear();
-    std::copy(parser.payload().begin(), parser.payload().end(),
-        std::back_inserter(payload));
+    parser.payload(std::move(payload));
+    //std::copy(parser.payload().begin(), parser.payload().end(),
+    //    std::back_inserter(std::move(payload)));
     EXIT_TRACE();
 }
 

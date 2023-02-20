@@ -66,7 +66,7 @@ void DHT11_Simulator::handler(
 		SenmlJsonType record(
 							"temperature",
 							"Cel",
-							SenmlJsonType::Value(25.5),
+							move(SenmlJsonType::Value(25.5)),
 							get_timestamp()
 						);
 		out->push_back(move(record));
@@ -77,7 +77,7 @@ void DHT11_Simulator::handler(
 		SenmlJsonType record(
 							"humidity",
 							"%RH",
-							SenmlJsonType::Value(40.0),
+							move(SenmlJsonType::Value(40.0)),
 							get_timestamp()
 						);
 		out->push_back(move(record));
@@ -178,7 +178,7 @@ void RGB_LED_Simulator::handler(
 			record.value.asNumber = m_blueLight;
 			TRACE("*** Blue Light: ", (int)m_blueLight, "\n");
 		}
-		out->push_back(record);
+		out->push_back(move(record));
 	}
 	EXIT_TRACE();
 }
