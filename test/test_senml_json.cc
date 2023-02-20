@@ -24,12 +24,12 @@ TEST(testSenmlJson, createJson)
     SenmlJson parser;
 {
 	SenmlJsonType record("temperature", "Cel", SenmlJsonType::Value(25.5), get_timestamp());
-    parser.add_record(record);
+    parser.add_record(move(record));
 }
 
 {
 	SenmlJsonType record("humidity", "%RH", SenmlJsonType::Value(30.0), get_timestamp());
-    parser.add_record(record);
+    parser.add_record(move(record));
 }
 
 	parser.create_json(ec);
@@ -43,23 +43,23 @@ TEST(testSenmlJson, createJson)
 
 {
 	SenmlJsonType record("light", "%", SenmlJsonType::Value(100.0), get_timestamp());
-    parser.add_record(record);
+    parser.add_record(move(record));
 }
 
 {
 	SenmlJsonType record("test_str", "chars", SenmlJsonType::Value("text1"), get_timestamp());
-    parser.add_record(record);
+    parser.add_record(move(record));
 }
 
 {
 	SenmlJsonType record("test_bool", "boolean", SenmlJsonType::Value(true), get_timestamp());
-    parser.add_record(record);
+    parser.add_record(move(record));
 }
 
 {
 	const std::vector<uint8_t> text2 = {'A','B','C','D','E','F'};
 	SenmlJsonType record("test_data", "Base64", SenmlJsonType::Value(text2), get_timestamp());
-    parser.add_record(record);
+    parser.add_record(move(record));
 }
 
 	parser.create_json(ec);
@@ -109,7 +109,7 @@ TEST(testSenmlJson, parseJson)
 		info("base version: {0:d}",parser.base_version());
 
 		size_t i = 0;
-		for(auto record : parser.payload())
+		for(auto &record : parser.payload())
 		{
 			info("=============");
 			info("Record {0:d}:", ++i);

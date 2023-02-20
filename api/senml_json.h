@@ -49,34 +49,24 @@ struct SenmlJsonType
 		: type{DATA}, asNumber{0}, asString{}, asBoolean{false}, asData{_asData}
 		{}
 
-		Value(const Value &other)
-		{
-			if (this != &other)
-			{
-				type = other.type;
-				asNumber = other.asNumber;
-				asString = other.asString;
-				asBoolean = other.asBoolean;
-				asData = other.asData;
-			}
-		}
-
 		~Value()
 		{}
 
-		Value &operator=(const Value &other)
+		Value &operator=(Value &&other)
 		{
 			if (this == &other)
 				return *this;
 
-			type = other.type;
-			asNumber = other.asNumber;
-			asString = other.asString;
-			asBoolean = other.asBoolean;
-			asData = other.asData;
-
+			std::swap(type, other.type);
+			std::swap(asNumber, other.asNumber);
+			asString = std::move(other.asString);
+			std::swap(asBoolean, other.asBoolean);
+			asData = std::move(other.asData);
 			return *this;
 		}
+
+		Value(Value &&other)
+		{ operator=(std::move(other));	}
 
 		void clear()
 		{
@@ -99,11 +89,25 @@ struct SenmlJsonType
 	SenmlJsonType(
 		const char *_name, 
 		const char *_unit, 
-		const Value &_value,
+		Value &&_value,
 		double _time
 		)
-	: name{_name}, unit{_unit}, value{_value}, sum{0}, time{_time}, updateTime{0}
+	: name{_name}, unit{_unit}, value{std::move(_value)}, sum{0}, time{_time}, updateTime{0}
 	{}
+	SenmlJsonType &operator=(SenmlJsonType &&other)
+	{
+		if (this == &other)
+			return *this;
+
+		value = std::move(other.value);
+		std::swap(sum, other.sum);
+		std::swap(time, other.time);
+		std::swap(updateTime, other.updateTime);
+		return *this;
+	}
+	SenmlJsonType(SenmlJsonType &&other)
+	{ operator=(std::move(other)); }
+
 	~SenmlJsonType()
 	{}
 	void clear()
@@ -138,8 +142,8 @@ public:
 
 	void clear();
 
-	void add_record(const SenmlJsonType &record)
-	{ m_payload.push_back(record); }
+	void add_record(SenmlJsonType &&record)
+	{ m_payload.emplace_back(std::move(record)); }
 
 	void create_json(std::error_code &ec);
 	void parse_json(const char *json, std::error_code &ec);
@@ -151,6 +155,9 @@ public:
 
 	const std::vector<SenmlJsonType> &payload() const
 	{ return static_cast<const std::vector<SenmlJsonType> &>(m_payload); }
+
+	void payload(std::vector<SenmlJsonType> &&value)
+	{ m_payload = std::move(value); }
 
 	const std::string &base_name() const
 	{ return static_cast<const std::string &>(m_baseName); }

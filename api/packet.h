@@ -301,25 +301,28 @@ struct DataType
                 asHexArray[i] = hex[i];
         }
 
-        Value(const std::vector<SenmlJsonType> &senmlJson)
-        : type{TYPE_SENML_JSON}, asString{}, asHexArray{0}, asSenmlJson{senmlJson}, asCoreLink{0}
+        Value(std::vector<SenmlJsonType> &&senmlJson)
+        : type{TYPE_SENML_JSON}, asString{}, asHexArray{0}, asSenmlJson{std::move(senmlJson)}, asCoreLink{0}
         {}
 
         Value(std::vector<CoreLinkType> &&coreLink)
         : type{TYPE_CORE_LINK}, asString{}, asHexArray{0}, asSenmlJson{0}, asCoreLink{std::move(coreLink)}
         {}
 
-        Value(const Value &other)
+        Value &operator=(Value &&other)
         {
-            if (this != &other)
-            {
-                type = other.type;
-                asString = other.asString;
-                asHexArray = other.asHexArray;
-                asSenmlJson = other.asSenmlJson;
-                //asCoreLink = other.asCoreLink; // TODO Uncomment after CoreLinkType implementation
-            }
+            if (this == &other)
+                return *this;
+
+            std::swap(type, other.type);
+            asString = std::move(other.asString);
+            asHexArray = std::move(other.asHexArray);
+            asSenmlJson = std::move(other.asSenmlJson);
+            asCoreLink = std::move(other.asCoreLink);
+            return *this;
         }
+        Value(Value &&other)
+        { operator=(std::move(other)); }
 
         ~Value()
         {}
@@ -335,8 +338,8 @@ struct DataType
     : value{hex, size}
     {}
 
-    DataType(const std::vector<SenmlJsonType> &senmlJson)
-    : value{senmlJson}
+    DataType(std::vector<SenmlJsonType> &&senmlJson)
+    : value{std::move(senmlJson)}
     {}
 
     DataType(std::vector<CoreLinkType> &&coreLink)

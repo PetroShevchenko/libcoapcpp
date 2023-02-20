@@ -234,7 +234,7 @@ void SenmlJson::parse_record(cJSON *node, std::error_code &ec)
 			record.value.asBoolean = cJSON_IsTrue(item);
 		}
 	}
-	m_payload.push_back(record);
+	add_record(move(record));
 	ec.clear();
 }
 
