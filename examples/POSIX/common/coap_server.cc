@@ -348,20 +348,27 @@ void CoapServer::extract_path_from_option(std::string &path, std::error_code &ec
     std::vector<Option *> uri_path;
     size_t qty;
 
+    ec = make_error_code(CoapStatus::COAP_ERR_BAD_REQUEST);
+
     qty = m_packet.find_option(URI_PATH, uri_path);
     if (qty == 0) // GET request doesn't contain any Uri-Path option
     {
-        ec = make_error_code(CoapStatus::COAP_ERR_BAD_REQUEST);
         EXIT_TRACE();
         return;
     }
     for (size_t i = 0; i < qty; ++i)
     {
         TRACE("Uri-Path [", i, "]:\n");
+        if (uri_path[i] == nullptr || uri_path[i]->value().empty())
+        {
+            EXIT_TRACE();
+            return;
+        }
         TRACE_ARRAY((uri_path[i])->value());
         path += "/" + std::string((uri_path[i])->value().begin(), (uri_path[i])->value().end());
     }
     TRACE("Full path: ", path, "\n");
+    ec.clear();
     EXIT_TRACE();
 }
 
@@ -615,10 +622,7 @@ void CoapServer::fill_senml_json_payload(vector<SenmlJsonType> &payload, std::er
         EXIT_TRACE();
         return;        
     }
-    payload.clear();
-    parser.payload(std::move(payload));
-    //std::copy(parser.payload().begin(), parser.payload().end(),
-    //    std::back_inserter(std::move(payload)));
+    payload = std::move(parser.payload());
     EXIT_TRACE();
 }
 

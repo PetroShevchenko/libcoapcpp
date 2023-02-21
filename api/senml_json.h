@@ -99,6 +99,8 @@ struct SenmlJsonType
 		if (this == &other)
 			return *this;
 
+		name = std::move(other.name);
+		unit = std::move(other.unit);
 		value = std::move(other.value);
 		std::swap(sum, other.sum);
 		std::swap(time, other.time);
@@ -155,6 +157,9 @@ public:
 
 	const std::vector<SenmlJsonType> &payload() const
 	{ return static_cast<const std::vector<SenmlJsonType> &>(m_payload); }
+
+	std::vector<SenmlJsonType> &payload()
+	{ return m_payload; }
 
 	void payload(std::vector<SenmlJsonType> &&value)
 	{ m_payload = std::move(value); }
