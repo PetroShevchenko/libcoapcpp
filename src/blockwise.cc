@@ -268,6 +268,47 @@ bool Blockwise::get_header (BlockType type, Packet & pack, std::error_code *ec)
     return true;
 }
 
+bool add_uri_path_option(
+            uint16_t port,
+            const UriPath &uriPath,
+            Packet &pack,
+            error_code &ec
+        )
+{
+    set_level(level::debug);
+    // clean all options
+    pack.options().clear();
+    // add option URI_PORT
+    uint16_t portnum = htons(port);
+    pack.add_option(
+                URI_PORT,
+                (const uint8_t *)&portnum,
+                sizeof(uint16_t),
+                ec
+            );
+    if (ec.value())
+    {
+        debug("add_option(URI_PORT) error : {}", ec.message());
+        return false;
+    }
+    // add options URI_PATH
+    for (const string &opt : uriPath.uri().asString())
+    {
+        pack.add_option(
+                    URI_PATH,
+                    (const uint8_t *)opt.c_str(),
+                    opt.length(),
+                    ec
+                );
+        if (ec.value())
+        {
+            debug("add_option(URI_PATH) error : {}", ec.message());
+            return false;
+        }
+    }
+    return true;
+}
+
 bool Blockwise::set_header(
             BlockType type,
             uint16_t port,
@@ -280,36 +321,12 @@ bool Blockwise::set_header(
     error_code iec;
     if (ec == nullptr) ec = &iec;
 
-    // clean all options
-    pack.options().clear();
-    // add option URI_PORT
-    port = htons(port);
-    pack.add_option(
-                URI_PORT,
-                (const uint8_t *)&port,
-                sizeof(uint16_t),
-                *ec
-            );
-    if (ec->value())
+    if (!add_uri_path_option(port, uriPath, pack, *ec))
     {
-        debug("add_option(URI_PORT) error : {}", ec->message());
+        debug("add_uri_path_option() error : {}", ec->message());
         return false;
     }
-    // add options URI_PATH
-    for (const string &opt : uriPath.uri().asString())
-    {
-        pack.add_option(
-                    URI_PATH,
-                    (const uint8_t *)opt.c_str(),
-                    opt.length(),
-                    *ec
-                );
-        if (ec->value())
-        {
-            debug("add_option(URI_PATH) error : {}", ec->message());
-            return false;
-        }
-    }
+
     // if it is the first block
     if (number() == 0)
     {

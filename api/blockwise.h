@@ -143,6 +143,12 @@ private:
 };
 
 Blocksize size_to_sizeoption(size_t size);
+bool add_uri_path_option(
+            uint16_t port,
+            const UriPath &uriPath,
+            Packet &pack,
+            std::error_code &ec
+        );
 
 } // namespace coap
 

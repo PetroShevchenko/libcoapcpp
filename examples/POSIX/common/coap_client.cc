@@ -230,6 +230,14 @@ void CoapClient::prepare_get_request(std::error_code &ec)
 	{
 		m_messageId = generate_identity();
 	}
+	if (!m_block)
+	{
+		if (!add_uri_path_option(m_port, m_uriPath, m_packet, ec))
+		{
+			EXIT_TRACE();
+			return;
+		}
+	}
 	m_packet.make_request(ec, CONFIRMABLE, GET, m_messageId, nullptr, 0);
 	if (ec.value())
 	{
