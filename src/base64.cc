@@ -116,10 +116,10 @@ void Base64Encoder::decode(
 
     for (size_t i = 0, j = 0; i < length;) {
 
-        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : s_decodingTable[data[i++]];
-        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : s_decodingTable[data[i++]];
-        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : s_decodingTable[data[i++]];
-        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : s_decodingTable[data[i++]];
+        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : s_decodingTable[(int)data[i++]];
+        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : s_decodingTable[(int)data[i++]];
+        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : s_decodingTable[(int)data[i++]];
+        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : s_decodingTable[(int)data[i++]];
 
         uint32_t triple = (sextet_a << 3 * 6)
         + (sextet_b << 2 * 6)

@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "coap-server",
+			"path": "coap-server"
+		}
+	],
+	"settings": {}
+}
