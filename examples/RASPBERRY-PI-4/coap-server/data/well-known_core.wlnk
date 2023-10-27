@@ -1,6 +1,0 @@
-</sensors>;ct=40;title="Sensor Index",
-</sensors/DHT11/temp>;rt="temperature-c";if="sensor",
-</sensors/DHT11/hum>;rt="humidity-%";if="sensor",
-</sensors/RGB_LED/red>;rt="light-%";if="sensor",
-</sensors/RGB_LED/green>;rt="light-%";if="sensor",
-</sensors/RGB_LED/blue>;rt="light-%";if="sensor"

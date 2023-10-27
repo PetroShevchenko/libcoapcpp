@@ -1,0 +1,29 @@
+{
+  "name": "libcoapcpp",
+  "version": "1.0.0",
+  "description": "libcoapcpp is an open-source C++ implementattion of the constrained application protocol (CoAP)",
+  "keywords": "coap, lwip, stm32",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/PetroShevchenko/libcoapcpp/tree/platformio"
+  },
+  "authors":
+  [
+    {
+      "name": "Petro Shevchenko",
+      "email": "shevchenko.p.i@gmail.com",
+      "url": "https://www.embedded.net.ua/#!about",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://www.embedded.net.ua/",
+  "dependencies": {
+    "DaveGamble/cJSON": "~1.7.16",
+    "mincrmatt12/stm32-platformio-freertos": "~10.0.1-1.9.2",
+    "mincrmatt12/stm32-platformio-lwip": "~2.0.3-1.9.2"    
+  },
+  "frameworks": "stm32cube",
+  "platforms": "ststm32"
+}
