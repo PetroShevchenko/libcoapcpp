@@ -17,7 +17,7 @@
       "maintainer": true
     }
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "homepage": "https://www.embedded.net.ua/",
   "dependencies": {
     "external-repo": "https://github.com/DaveGamble/cJSON.git#v1.7.16",
