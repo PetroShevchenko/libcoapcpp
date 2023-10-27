@@ -20,9 +20,9 @@
   "license": "MIT",
   "homepage": "https://www.embedded.net.ua/",
   "dependencies": {
-    "DaveGamble/cJSON": "~1.7.16",
-    "mincrmatt12/stm32-platformio-freertos": "~10.0.1-1.9.2",
-    "mincrmatt12/stm32-platformio-lwip": "~2.0.3-1.9.2"    
+    "external-repo": "https://github.com/DaveGamble/cJSON.git#1.7.16",
+    "external-repo": "https://github.com/mincrmatt12/stm32-platformio-freertos.git#10.0.1-1.9.2",
+    "external-repo": "https://github.com/mincrmatt12/stm32-platformio-lwip.git#2.0.3-1.9.2"
   },
   "frameworks": "stm32cube",
   "platforms": "ststm32"
