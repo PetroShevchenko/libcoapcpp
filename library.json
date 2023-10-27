@@ -1,6 +1,6 @@
 {
   "name": "libcoapcpp",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "libcoapcpp is an open-source C++ implementattion of the constrained application protocol (CoAP)",
   "keywords": "coap, lwip, stm32",
   "repository":
@@ -21,7 +21,7 @@
   "homepage": "https://www.embedded.net.ua/",
   "dependencies": {
     "external-repo": "https://github.com/DaveGamble/cJSON.git#v1.7.16",
-    "external-repo": "https://github.com/mincrmatt12/stm32-platformio-freertos.git#v10.0.1-1.9.2",
+    "external-repo": "https://github.com/mincrmatt12/stm32-platformio-freertos.git#70b50d68f7dcf511fc229ebdb26bd02fdbab77b2",
     "external-repo": "https://github.com/mincrmatt12/stm32-platformio-lwip.git#v2.0.3-1.9.2"
   },
   "frameworks": "stm32cube",
