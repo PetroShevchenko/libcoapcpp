@@ -93,6 +93,38 @@ TEST(testPacket, parse)
 
     EXPECT_TRUE(r == 0);
 }
+
+TEST(testPacket, parseNoPayload)
+{
+    error_code ec;
+    Packet packet;
+    const size_t noPayloadPacketSize = 50;
+    vector<uint8_t> testCoapPacketWithoutPayload(testCoapPacket, testCoapPacket + noPayloadPacketSize);
+
+    packet.parse(testCoapPacketWithoutPayload.data(), testCoapPacketWithoutPayload.size(), ec);
+    ASSERT_TRUE(!ec.value());
+
+#ifdef PRINT_TESTED_VALUES
+    print_packet(packet);
+#endif
+
+    EXPECT_EQ(packet.version(), COAP_VERSION);
+    EXPECT_EQ(packet.type(), CONFIRMABLE);
+    EXPECT_EQ(packet.token_length(), 4UL);
+    EXPECT_EQ(packet.code_as_byte(), POST);
+    EXPECT_EQ(packet.code_class(), 0);
+    EXPECT_EQ(packet.code_detail(), 2);
+    EXPECT_EQ(packet.identity(), 5097);
+
+    int r = memcmp(&testCoapPacketWithoutPayload[PACKET_HEADER_SIZE], packet.token().data(), packet.token_length());
+
+    EXPECT_TRUE(r == 0);
+
+    EXPECT_EQ(packet.options().size(), 6UL);
+    EXPECT_TRUE(packet.payload().empty());
+    EXPECT_EQ(packet.payload_offset(), noPayloadPacketSize);
+}
+
 /*
     RFC7252 : Option format
 
