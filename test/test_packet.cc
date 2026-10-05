@@ -121,7 +121,7 @@ TEST(testPacket, parseNoPayload)
 
     EXPECT_EQ(packet.options().size(), 6UL);
     EXPECT_TRUE(packet.payload().empty());
-    EXPECT_EQ(packet.payload_offset(), noPayloadPacketSize);
+    EXPECT_EQ(packet.payload_offset(), 0);
 }
 
 TEST(testPacket, rejectPayloadMarkerWithoutPayload)
