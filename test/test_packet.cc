@@ -273,6 +273,72 @@ TEST(testPacket, rejectTruncatedExtendedOption)
     }
 }
 
+TEST(testPacket, rejectOptionNumberAndLengthOverflow)
+{
+    /*
+        There are 5 packets for testing
+
+        Common header of every packet:
+        0x40        Version 1, CON, token length 0
+        0x01        GET
+        0x00, 0x01  Message ID
+
+        Option that follows the header:
+        0xE1, 0xFE, 0xFE, 0x78  Delta 65547 (wraps to 11, Uri-Path); length 1, value 'x'
+        0xE0, 0xFF, 0xFF        Delta 65804 (wraps to 268); length 0
+        0xE0, 0xE9, 0x53        Delta 60000; length 0
+        0xE0, 0x16, 0x63        Delta 6000, option number 66000 (wraps to 464); length 0
+        0x0E, 0xFF, 0xFF        Delta 0; length 65804 (wraps to 268), followed by 268 bytes
+    */
+    vector<uint8_t> lengthOverflow = {0x40, 0x01, 0x00, 0x01, 0x0E, 0xFF, 0xFF};
+    lengthOverflow.resize(lengthOverflow.size() + 268, 0x61);
+
+    const vector<TestCase> cases = {
+        {"delta wraps to Uri-Path",       {0x40, 0x01, 0x00, 0x01, 0xE1, 0xFE, 0xFE, 0x78},             CoapStatus::COAP_ERR_OPTION_DELTA},
+        {"delta above 65535",             {0x40, 0x01, 0x00, 0x01, 0xE0, 0xFF, 0xFF},                   CoapStatus::COAP_ERR_OPTION_DELTA},
+        {"accumulated number above 65535",{0x40, 0x01, 0x00, 0x01, 0xE0, 0xE9, 0x53, 0xE0, 0x16, 0x63}, CoapStatus::COAP_ERR_OPTION_DELTA},
+        {"length above 65535",            lengthOverflow,                                               CoapStatus::COAP_ERR_OPTION_LENGTH},
+    };
+
+    for (const auto & tc : cases)
+    {
+        error_code ec;
+        Packet packet;
+
+        packet.parse(tc.message.data(), tc.message.size(), ec);
+
+#ifdef PRINT_TESTED_VALUES
+        if (ec.value()) {
+            info("TC name: {0:s}", tc.name);
+            info("Error code: {0:s}, message: {1:s}", error_code_to_str((CoapStatus)ec.value()), ec.message());
+        }
+#endif
+        const error_code expected = make_error_code(tc.expected);
+
+        EXPECT_EQ(ec, expected)
+            << "  actual:   " << ec.message() << "\n"
+            << "  expected: " << expected.message();
+
+        for (const auto & opt : packet.options())
+            EXPECT_NE(opt.number(), URI_PATH) << "a wrapped option number was accepted";
+    }
+}
+
+TEST(testPacket, parseMaxOptionNumber)
+{
+    // 0xE0, 0xFE, 0xF2: delta 65535, the largest valid option number; length 0
+    const vector<uint8_t> message = {0x40, 0x01, 0x00, 0x01, 0xE0, 0xFE, 0xF2};
+
+    error_code ec;
+    Packet packet;
+
+    packet.parse(message.data(), message.size(), ec);
+
+    ASSERT_TRUE(!ec.value());
+    ASSERT_EQ(packet.options().size(), 1UL);
+    EXPECT_EQ(packet.options()[0].number(), 65535);
+}
+
 static void set_testOptionValue(uint8_t offset)
 {
     for(size_t i = 0; i < sizeof(testOptionValue); i++)

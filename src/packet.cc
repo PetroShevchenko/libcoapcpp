@@ -86,10 +86,7 @@ void Packet::parse_header(const void * buffer, size_t size, error_code &ec)
 
     code_as_byte(buf[1]);
 
-    if (m_littleEndian)
-        identity(static_cast<std::uint16_t>(buf[3] | (buf[2] << 8)));
-    else
-        identity(static_cast<std::uint16_t>(buf[2] | (buf[3] << 8)));
+    identity(static_cast<std::uint16_t>((buf[2] << 8) | buf[3]));
 }
 
 void Packet::parse_token(const void * buffer, size_t size, std::error_code &ec)
@@ -125,7 +122,7 @@ static bool parse_option(
         const uint8_t * buffer,
         size_t size,
         uint8_t parsing,
-        uint16_t &modifying,
+        uint32_t &modifying,
         size_t &offset,
         bool littleEndian
     )
@@ -146,10 +143,7 @@ static bool parse_option(
     {
         if (offset + 2 >= size)
             return false;
-        if (littleEndian)
-            modifying = buffer[offset + 1] | (buffer[offset + 2] << 8);
-        else
-            modifying = buffer[offset + 2] | (buffer[offset + 1] << 8);
+        modifying = (buffer[offset + 1] << 8) | buffer[offset + 2];
         modifying += MINUS_TWO_HUNDRED_SIXTY_NINE_OPT_VALUE;
         offset += sizeof(uint16_t);
     }
@@ -176,9 +170,9 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
 
     options().clear();
 
-    uint16_t optDelta = 0;
-    uint16_t optLength = 0;
-    uint16_t optNumber = 0;
+    uint32_t optDelta = 0;
+    uint32_t optLength = 0;
+    uint32_t optNumber = 0;
     Option opt;
 
     size_t offset = start_offset;
@@ -209,6 +203,11 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
         }
 
         optNumber += optDelta;
+        if (optNumber > UINT16_MAX)
+        {
+            ec = make_error_code(CoapStatus::COAP_ERR_OPTION_DELTA);
+            return;
+        }
         opt.number(optNumber);
 
         for (int i = 0; i < optLength; i++)
@@ -461,15 +460,8 @@ void Packet::serialize(
         buf [HEADER_OFFSET]  = header_as_byte();
         buf [CODE_OFFSET]    = code_as_byte();
 
-        if (little_endian())
-        {
-            buf [offset]     = (identity() >> 8 ) & 0xFF;
-            buf [offset + 1] = identity() & 0xFF;
-        }
-        else {
-            buf [offset]     = identity() & 0xFF;
-            buf [offset + 1] = (identity() >> 8 ) & 0xFF;
-        }
+        buf [offset]     = (identity() >> 8 ) & 0xFF;
+        buf [offset + 1] = identity() & 0xFF;
     }
 
     offset = TOKEN_OFFSET;
