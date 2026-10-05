@@ -178,3 +178,123 @@ std::error_code make_system_error (int e)
     return {e, std::generic_category()};
 }
 
+const char* error_code_to_str(CoapStatus e)
+{
+    switch(e)
+    {
+        case CoapStatus::COAP_OK:
+            return "COAP_OK";
+
+        case CoapStatus::COAP_ERR_OPTION_NUMBER:
+            return "COAP_ERR_OPTION_NUMBER";
+
+        case CoapStatus::COAP_ERR_PROTOCOL_VERSION:
+            return "COAP_ERR_PROTOCOL_VERSION";
+
+        case CoapStatus::COAP_ERR_TOKEN_LENGTH:
+            return "COAP_ERR_TOKEN_LENGTH";
+
+        case CoapStatus::COAP_ERR_OPTION_DELTA:
+            return "COAP_ERR_OPTION_DELTA";
+
+        case CoapStatus::COAP_ERR_OPTION_LENGTH:
+            return "COAP_ERR_OPTION_LENGTH";
+
+        case CoapStatus::COAP_ERR_URI_PATH:
+            return "COAP_ERR_URI_PATHd";
+
+        case CoapStatus::COAP_ERR_BUFFER_SIZE:
+            return "COAP_ERR_BUFFER_SIZE";
+
+        case CoapStatus::COAP_ERR_CREATE_SOCKET:
+            return "COAP_ERR_CREATE_SOCKET";
+
+        case CoapStatus::COAP_ERR_SOCKET_NOT_BOUND:
+            return "COAP_ERR_SOCKET_NOT_BOUND";
+
+        case CoapStatus::COAP_ERR_INCOMPLETE_SEND:
+            return "COAP_ERR_INCOMPLETE_SEN";
+
+        case CoapStatus::COAP_ERR_RECEIVE:
+            return "COAP_ERR_RECEIVE";
+
+        case CoapStatus::COAP_ERR_RESOLVE_ADDRESS:
+            return "COAP_ERR_RESOLVE_ADDRESS";
+
+        case CoapStatus::COAP_ERR_PORT_NUMBER:
+            return "COAP_ERR_PORT_NUMBER";
+
+        case CoapStatus::COAP_ERR_CREATE_BLOCK_OPTION:
+            return "COAP_ERR_CREATE_BLOCK_OPTION";
+
+        case CoapStatus::COAP_ERR_COAP_SERIALIZE:
+            return "COAP_ERR_COAP_SERIALIZE";
+
+        case CoapStatus::COAP_ERR_SEND:
+            return "COAP_ERR_SEND";
+
+        case CoapStatus::COAP_ERR_TIMEOUT:
+            return "COAP_ERR_TIMEOUT";
+
+        case CoapStatus::COAP_ERR_PACKET_RECEIVE:
+            return "COAP_ERR_PACKET_RECEIVEt";
+
+        case CoapStatus::COAP_ERR_RECEIVED_PACKET:
+            return "COAP_ERR_RECEIVED_PACKET";
+
+        case CoapStatus::COAP_ERR_URI_NOT_FOUND:
+            return "COAP_ERR_URI_NOT_FOUND";
+
+        case CoapStatus::COAP_ERR_SERVER_CODE:
+            return "COAP_ERR_SERVER_CODE";
+
+        case CoapStatus::COAP_ERR_DECODE_BLOCK_OPTION:
+            return "COAP_ERR_DECODE_BLOCK_OPTION";
+
+        case CoapStatus::COAP_ERR_SOCKET_DOMAIN:
+            return "COAP_ERR_SOCKET_DOMAIN";
+
+        case CoapStatus::COAP_ERR_MEMORY_ALLOCATE:
+            return "COAP_ERR_MEMORY_ALLOCATE";
+
+        case CoapStatus::COAP_ERR_NOT_IMPLEMENTED:
+            return "COAP_ERR_NOT_IMPLEMENTED";
+
+        case CoapStatus::COAP_ERR_NOT_CONNECTED:
+            return "COAP_ERR_NOT_CONNECTED";
+
+        case CoapStatus::COAP_ERR_EMPTY_HOSTNAME:
+            return "COAP_ERR_EMPTY_HOSTNAME";
+
+        case CoapStatus::COAP_ERR_EMPTY_ADDRESS:
+            return "COAP_ERR_EMPTY_ADDRESS";
+
+        case CoapStatus::COAP_ERR_REMOVE_CONNECTION:
+            return "COAP_ERR_REMOVE_CONNECTION";
+
+        case CoapStatus::COAP_ERR_NO_PAYLOAD:
+            return "COAP_ERR_NO_PAYLOAD";
+
+        case CoapStatus::COAP_ERR_CONNECTIONS_EXCEEDED:
+            return "COAP_ERR_CONNECTIONS_EXCEEDED";
+
+        case CoapStatus::COAP_ERR_DTLS_CTX_INIT:
+            return "COAP_ERR_DTLS_CTX_INI";
+
+        case CoapStatus::COAP_ERR_CREATE_JSON:
+            return "COAP_ERR_CREATE_JSON";
+
+        case CoapStatus::COAP_ERR_PARSE_JSON:
+            return "COAP_ERR_PARSE_JSON";
+
+        case CoapStatus::COAP_ERR_NO_JSON_FIELD:
+            return "COAP_ERR_NO_JSON_FIELD";
+
+        case CoapStatus::COAP_ERR_CREATE_CORE_LINK:
+            return "COAP_ERR_CREATE_CORE_LINK";
+
+        case CoapStatus::COAP_ERR_PARSE_CORE_LINK:
+            return "COAP_ERR_PARSE_CORE_LINK";
+    }
+    return "Unknown";
+}

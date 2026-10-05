@@ -62,4 +62,6 @@ template<> struct is_error_condition_enum<CoapStatus> : public true_type {};
 std::error_code make_error_code (CoapStatus e);
 std::error_code make_system_error (int e);
 
+const char* error_code_to_str(CoapStatus e);
+
 #endif
