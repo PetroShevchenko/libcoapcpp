@@ -83,4 +83,20 @@ void print_serialized_packet(const void *data, size_t size)
     }
     fmt::print("\n");
 }
+
+void print_error(const char* tcName, const error_code &ec)
+{
+    if (ec.value()) {
+        if (tcName) {
+            info("TC name: {0:s}", tcName);
+        }
+        info("Error code: {0:s}, message: {1:s}", error_code_to_str((CoapStatus)ec.value()), ec.message());
+    }
+}
+
+void print_error(const error_code &ec)
+{
+    print_error(nullptr, ec);
+}
+
 #endif

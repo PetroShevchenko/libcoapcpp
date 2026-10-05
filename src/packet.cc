@@ -123,8 +123,7 @@ static bool parse_option(
         size_t size,
         uint8_t parsing,
         uint32_t &modifying,
-        size_t &offset,
-        bool littleEndian
+        size_t &offset
     )
 {
     assert(buffer != nullptr);
@@ -182,13 +181,13 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
         optDelta = opt.delta();
         optLength = opt.length();
 
-        if ( !parse_option(buf, size, opt.delta(), optDelta, offset, m_littleEndian) )
+        if ( !parse_option(buf, size, opt.delta(), optDelta, offset) )
         {
             ec = make_error_code(CoapStatus::COAP_ERR_OPTION_DELTA);
             return;
         }
 
-        if ( !parse_option(buf, size, opt.length(), optLength, offset, m_littleEndian) )
+        if ( !parse_option(buf, size, opt.length(), optLength, offset) )
         {
             ec = make_error_code(CoapStatus::COAP_ERR_OPTION_LENGTH);
             return;
@@ -210,7 +209,7 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
         }
         opt.number(optNumber);
 
-        for (int i = 0; i < optLength; i++)
+        for (uint32_t i = 0; i < optLength; i++)
         {
             opt.value().push_back(buf[offset + i]);
         }
@@ -219,8 +218,14 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
         opt.clear();
     }
 
-    if (offset < size && buf[offset] == PAYLOAD_MARKER)
-        payload_offset(offset + sizeof(PAYLOAD_MARKER));
+    if (offset < size && buf[offset] == PAYLOAD_MARKER) {
+        size_t payloadOffset = offset + sizeof(PAYLOAD_MARKER);
+        if (payloadOffset == size) {
+            ec = make_error_code(CoapStatus::COAP_ERR_NO_PAYLOAD);
+            return;
+        }
+        payload_offset(payloadOffset);
+    }
     else
         payload_offset(0); // there is no any payload
 }

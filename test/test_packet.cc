@@ -11,12 +11,6 @@ using namespace std;
 using namespace coap;
 using namespace spdlog;
 
-struct TestCase {
-    const char * name;
-    vector<uint8_t> message;
-    CoapStatus expected;
-};
-
 /*
     RFC7252 : CoAp frame format
 
@@ -69,7 +63,6 @@ static const OptionNumber testOptionSet[] = {
 };
 
 static uint8_t testOptionValue[32] = {0};
-
 
 TEST(testPacket, parse)
 {
@@ -129,6 +122,28 @@ TEST(testPacket, parseNoPayload)
     EXPECT_EQ(packet.options().size(), 6UL);
     EXPECT_TRUE(packet.payload().empty());
     EXPECT_EQ(packet.payload_offset(), noPayloadPacketSize);
+}
+
+TEST(testPacket, rejectPayloadMarkerWithoutPayload)
+{
+    const vector<vector<uint8_t>> messages = {
+        {0x40, 0x01, 0x00, 0x01, 0xFF},                        // marker right after the header
+        vector<uint8_t>(testCoapPacket, testCoapPacket + 51),  // marker after the options
+    };
+
+    for (const auto & message : messages)
+    {
+        error_code ec;
+        Packet packet;
+
+        packet.parse(message.data(), message.size(), ec);
+
+#ifdef PRINT_TESTED_VALUES
+        print_error(ec);
+#endif
+
+        EXPECT_EQ(ec, make_error_code(CoapStatus::COAP_ERR_NO_PAYLOAD));
+    }
 }
 
 /*
@@ -260,10 +275,7 @@ TEST(testPacket, rejectTruncatedExtendedOption)
         packet.parse(tc.message.data(), tc.message.size(), ec);
 
 #ifdef PRINT_TESTED_VALUES
-        if (ec.value()) {
-            info("TC name: {0:s}", tc.name);
-            info("Error code: {0:s}, message: {1:s}", error_code_to_str((CoapStatus)ec.value()), ec.message());
-        }
+        print_error(tc.name, ec);
 #endif
         const error_code expected = make_error_code(tc.expected);
 
@@ -308,11 +320,9 @@ TEST(testPacket, rejectOptionNumberAndLengthOverflow)
         packet.parse(tc.message.data(), tc.message.size(), ec);
 
 #ifdef PRINT_TESTED_VALUES
-        if (ec.value()) {
-            info("TC name: {0:s}", tc.name);
-            info("Error code: {0:s}, message: {1:s}", error_code_to_str((CoapStatus)ec.value()), ec.message());
-        }
+        print_error(tc.name, ec);
 #endif
+
         const error_code expected = make_error_code(tc.expected);
 
         EXPECT_EQ(ec, expected)
