@@ -41,6 +41,9 @@ add_subdirectory(${WOLFSSL_PATH})
 
 set(MBEDTLS_PATH ${CMAKE_CURRENT_LIST_DIR}/third-party/mbedtls)
 
+set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL
+    "Treat mbedTLS warnings as errors" FORCE)
+
 include_directories(${MBEDTLS_PATH}/mbedtls)
 
 add_subdirectory(${MBEDTLS_PATH})

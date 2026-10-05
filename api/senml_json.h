@@ -4,6 +4,7 @@
 #include "error.h"
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace coap
 {
