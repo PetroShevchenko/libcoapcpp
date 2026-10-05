@@ -11,6 +11,12 @@ using namespace std;
 using namespace coap;
 using namespace spdlog;
 
+struct TestCase {
+    const char * name;
+    vector<uint8_t> message;
+    CoapStatus expected;
+};
+
 /*
     RFC7252 : CoAp frame format
 
@@ -220,6 +226,50 @@ TEST(testPacket, findOption)
                 break;
             }
         }
+    }
+}
+
+TEST(testPacket, rejectTruncatedExtendedOption)
+{
+    /*
+        There are 4 packets for testing
+
+        Common header of every packet:
+        0x40        Version 1, CON, token length 0
+        0x01        GET
+        0x00, 0x01  Message ID
+
+        Truncated option that follows the header:
+        0xD0        Delta 13 requires one more byte; length 0
+        0xE0, 0x00  Delta 14 requires two more bytes, only one is present; length 0
+        0x0D        Delta 0; length 13 requires one more byte
+        0x0E, 0x00  Delta 0; length 14 requires two more bytes, only one is present
+    */
+    const vector<TestCase> cases = {
+        {"delta 13, no extended byte",          {0x40, 0x01, 0x00, 0x01, 0xD0},       CoapStatus::COAP_ERR_OPTION_DELTA},
+        {"delta 14, one extended byte of two",  {0x40, 0x01, 0x00, 0x01, 0xE0, 0x00}, CoapStatus::COAP_ERR_OPTION_DELTA},
+        {"length 13, no extended byte",         {0x40, 0x01, 0x00, 0x01, 0x0D},       CoapStatus::COAP_ERR_OPTION_LENGTH},
+        {"length 14, one extended byte of two", {0x40, 0x01, 0x00, 0x01, 0x0E, 0x00}, CoapStatus::COAP_ERR_OPTION_LENGTH},
+    };
+
+    for (const auto & tc : cases)
+    {
+        error_code ec;
+        Packet packet;
+
+        packet.parse(tc.message.data(), tc.message.size(), ec);
+
+#ifdef PRINT_TESTED_VALUES
+        if (ec.value()) {
+            info("TC name: {0:s}", tc.name);
+            info("Error code: {0:s}, message: {1:s}", error_code_to_str((CoapStatus)ec.value()), ec.message());
+        }
+#endif
+        const error_code expected = make_error_code(tc.expected);
+
+        EXPECT_EQ(ec, expected)
+            << "  actual:   " << ec.message() << "\n"
+            << "  expected: " << expected.message();
     }
 }
 
