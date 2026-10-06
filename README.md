@@ -66,9 +66,7 @@ You can configure your build with script variables:
 
 Currently, the following platforms are supported:
 * POSIX
-* RASPBERRY-PI
-* NUCLEO-F429ZI
-* STM32MP157A-DK1
+* RASPBERRY-PI-4
 
 The following options are available only if TARGET=POSIX:
 * BUILD_TYPE - select build in host system (NATIVE) or docker container(DOCKER)
@@ -119,6 +117,10 @@ cd examples/coap-server
 pio run
 pio run -t upload
 ```
+
+> **Note:** the `coap-server` example is a work in progress. It currently only blinks an LED
+> and serves as a project template that verifies the library builds for NUCLEO-F429ZI.
+> The CoAP server itself is not implemented yet.
 
 Alternatively, open `examples/examples.code-workspace` in VS Code with the PlatformIO IDE extension installed.
 
