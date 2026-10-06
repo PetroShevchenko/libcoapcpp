@@ -39,6 +39,9 @@ cd examples/coap-server
 pio run
 pio run -t upload
 ```
+> **Note:** the `coap-server` example is a work in progress. It currently only blinks an LED
+> and serves as a project template that verifies the library builds for NUCLEO-F429ZI.
+> The CoAP server itself is not implemented yet.
 
 Alternatively, open `examples/examples.code-workspace` in VS Code with the PlatformIO IDE extension installed.
 
