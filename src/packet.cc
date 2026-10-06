@@ -137,14 +137,14 @@ static bool parse_option(
 
     if (parsing == MINUS_THIRTEEN)
     {
-        if (offset + 1 > size)
+        if (offset + 1 >= size)
             return false;
         modifying = buffer[offset + 1] + MINUS_THIRTEEN_OPT_VALUE;
         offset += sizeof(uint8_t);
     }
     else if (parsing == MINUS_TWO_HUNDRED_SIXTY_NINE)
     {
-        if (offset + 2 > size)
+        if (offset + 2 >= size)
             return false;
         if (littleEndian)
             modifying = buffer[offset + 1] | (buffer[offset + 2] << 8);
