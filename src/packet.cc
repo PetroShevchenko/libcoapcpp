@@ -59,7 +59,6 @@ void Message::clear()
 void Packet::parse_header(const void * buffer, size_t size, error_code &ec)
 {
     assert(buffer != nullptr);
-    assert(size >= PACKET_MIN_LENGTH);
 
     ec.clear();
 
@@ -183,7 +182,7 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
     Option opt;
 
     size_t offset = start_offset;
-    for (; buf[offset] !=  PAYLOAD_MARKER && offset < size; offset += optLength)
+    for (; offset < size && buf[offset] !=  PAYLOAD_MARKER; offset += optLength)
     {
         opt.header_as_byte(buf[offset]);
         optDelta = opt.delta();
@@ -256,7 +255,6 @@ void Packet::parse_payload(const void * buffer, size_t size, std::error_code &ec
 void Packet::parse(const void * buffer, size_t size, std::error_code &ec)
 {
     assert(buffer != nullptr);
-    assert(size != 0);
 
     ec.clear();
 
