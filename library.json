@@ -1,12 +1,13 @@
 {
   "name": "libcoapcpp",
-  "version": "1.0.5",
-  "description": "libcoapcpp is an open-source C++ implementattion of the constrained application protocol (CoAP)",
+  "version": "1.0.6",
+  "description": "libcoapcpp is an open-source C++ implementation of the constrained application protocol (CoAP)",
   "keywords": "coap, lwip, stm32",
   "repository":
   {
     "type": "git",
-    "url": "https://github.com/PetroShevchenko/libcoapcpp/tree/platformio"
+    "url": "https://github.com/PetroShevchenko/libcoapcpp.git",
+    "branch": "platformio"
   },
   "authors":
   [
@@ -19,10 +20,11 @@
   ],
   "license": "Apache-2.0",
   "homepage": "https://www.embedded.net.ua/",
-  "dependencies": {
-    "external-repo": "https://github.com/DaveGamble/cJSON.git#v1.7.16",
-    "external-repo": "https://github.com/mincrmatt12/stm32-platformio-freertos.git#70b50d68f7dcf511fc229ebdb26bd02fdbab77b2",
-    "external-repo": "https://github.com/mincrmatt12/stm32-platformio-lwip.git#v2.0.3-1.9.2"
+  "dependencies":
+  {
+    "cJSON": "https://github.com/DaveGamble/cJSON.git#v1.7.16",
+    "stm32-platformio-freertos": "https://github.com/mincrmatt12/stm32-platformio-freertos.git#70b50d68f7dcf511fc229ebdb26bd02fdbab77b2",
+    "stm32-platformio-lwip": "https://github.com/mincrmatt12/stm32-platformio-lwip.git#v2.0.3-1.9.2"
   },
   "frameworks": "stm32cube",
   "platforms": "ststm32"
