@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [private/development]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    env:
+      # CMakeLists.txt takes the Google Test sources from this variable
+      GTEST_DIR: ${{ github.workspace }}/third-party/googletest/googletest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      # mbedTLS generates part of its sources with Python scripts that need these modules
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-jinja2 python3-jsonschema
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler == 'gcc' && 'g++' || 'clang++' }}
+
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
+
+      # libcjson.so is built into build/lib and is not installed system-wide
+      - name: Test
+        run: LD_LIBRARY_PATH="$PWD/build/lib" ./build/test_coapcpp
