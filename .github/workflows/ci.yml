@@ -8,6 +8,7 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -22,9 +23,12 @@ jobs:
 
       # mbedTLS generates part of its sources with Python scripts that need these modules
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends python3-jinja2 python3-jsonschema
+          if ! python3 -c "import jinja2, jsonschema" 2>/dev/null; then
+            sudo apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=3 update
+            sudo apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=3 install -y --no-install-recommends python3-jinja2 python3-jsonschema
+          fi
 
       - name: Configure
         run: >
