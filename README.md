@@ -1,5 +1,7 @@
 # libcoapcpp
 
+[![CI](https://github.com/PetroShevchenko/libcoapcpp/actions/workflows/ci.yml/badge.svg?branch=private%2Fdevelopment)](https://github.com/PetroShevchenko/libcoapcpp/actions/workflows/ci.yml)
+
 libcoapcpp is an open-source C++ implementattion of the constrained application protocol (CoAP).
 
 ## Library content
