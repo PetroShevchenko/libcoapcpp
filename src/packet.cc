@@ -236,7 +236,7 @@ void Packet::parse_payload(const void * buffer, size_t size, std::error_code &ec
 
     if (size < payload_offset())
     {
-        ec = make_system_error(EINVAL);
+        ec = make_error_code(CoapStatus::COAP_ERR_PACKET_LENGTH);
         return;
     }
 
@@ -259,7 +259,7 @@ void Packet::parse(const void * buffer, size_t size, std::error_code &ec)
 
     if (!size)
     {
-        ec = make_system_error(EINVAL);
+        ec = make_error_code(CoapStatus::COAP_ERR_PACKET_LENGTH);
         return;
     }
 
@@ -557,7 +557,7 @@ void Packet::make_request(
 
     if (tokenLength > TOKEN_MAX_LENGTH)
     {
-        ec = make_system_error(EINVAL);
+        ec = make_error_code(CoapStatus::COAP_ERR_TOKEN_LENGTH);
         return;
     }
 
