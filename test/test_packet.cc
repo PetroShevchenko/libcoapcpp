@@ -124,6 +124,33 @@ TEST(testPacket, parseNoPayload)
     EXPECT_EQ(packet.payload_offset(), 0);
 }
 
+TEST(testPacket, parseNoOptionsNoPayload)
+{
+    /*
+        0x60        Version 1, ACK, token length 0
+        0x00        Empty message (0.00)
+        0x12, 0x34  Message ID
+    */
+    const vector<uint8_t> message = {0x60, 0x00, 0x12, 0x34};
+
+    error_code ec;
+    Packet packet;
+
+    packet.parse(message.data(), message.size(), ec);
+
+#ifdef PRINT_TESTED_VALUES
+    print_error("without options and payload", ec);
+#endif
+
+    ASSERT_FALSE(ec) << "  actual: " << ec.message();
+
+    EXPECT_EQ(packet.version(), 1);
+    EXPECT_EQ(packet.token_length(), 0);
+    EXPECT_EQ(packet.identity(), 0x1234);
+    EXPECT_EQ(packet.type(), 0x2);
+    EXPECT_EQ(packet.code_as_byte(), 0x00);
+}
+
 TEST(testPacket, rejectPayloadMarkerWithoutPayload)
 {
     const vector<vector<uint8_t>> messages = {
