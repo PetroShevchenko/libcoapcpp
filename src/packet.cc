@@ -70,7 +70,7 @@ void Packet::parse_header(const void * buffer, size_t size, error_code &ec)
 
     if (size < PACKET_MIN_LENGTH)
     {
-        ec = make_system_error(EINVAL);
+        ec = make_error_code(CoapStatus::COAP_ERR_PACKET_LENGTH);
         return;
     }
 
@@ -109,7 +109,7 @@ void Packet::parse_token(const void * buffer, size_t size, std::error_code &ec)
 
     if (size < PACKET_HEADER_SIZE + token_length())
     {
-        ec = make_system_error(EINVAL);
+        ec = make_error_code(CoapStatus::COAP_ERR_PACKET_LENGTH);
         return;
     }
 
