@@ -412,8 +412,8 @@ void Packet::serialize(
         bool checkBufferSizeOnly
     )
 {
-#define exit_if_buffer_overflow(o, s, e, f)\
-        if (!f && o > s)\
+#define exit_if_buffer_overflow(o, n, s, e, f)\
+        if (!f && o + n > s)\
         {\
             e = make_error_code(CoapStatus::COAP_ERR_BUFFER_SIZE);\
             return;\
@@ -433,7 +433,7 @@ void Packet::serialize(
 
         if (size < static_cast<size_t>(PACKET_MIN_LENGTH + token_length()))
         {
-            ec = make_system_error(EINVAL);
+            ec = make_error_code(CoapStatus::COAP_ERR_BUFFER_SIZE);
             return;
         }
     }
@@ -464,15 +464,11 @@ void Packet::serialize(
 
     offset += token_length();
 
-    exit_if_buffer_overflow(offset, size, ec, checkBufferSizeOnly);
-
     size_t optNumDelta = 0, optDelta = 0;
 
     for (auto opt : options())
     {
         size_t lengthNibble = 0, deltaNibble = 0;
-
-        exit_if_buffer_overflow(offset, size, ec, checkBufferSizeOnly);
 
         optDelta = opt.number() - optNumDelta;
 
@@ -480,14 +476,14 @@ void Packet::serialize(
 
         lengthNibble = get_option_nibble(opt.value().size());
 
+        exit_if_buffer_overflow(offset, 1, size, ec, checkBufferSizeOnly);
+
         if (!checkBufferSizeOnly)
         {
             buf [offset] = (deltaNibble << 4 | lengthNibble) & 0xFF;
         }
 
         offset++;
-
-        exit_if_buffer_overflow(offset, size, ec, checkBufferSizeOnly);
 
         make_option(buf, size, offset, deltaNibble, optDelta, checkBufferSizeOnly, ec);
         if (ec)
@@ -501,28 +497,26 @@ void Packet::serialize(
             return;
         }
 
-        if (!checkBufferSizeOnly)
+        exit_if_buffer_overflow(offset, opt.value().size(), size, ec, checkBufferSizeOnly);
+
+        if (!checkBufferSizeOnly && !opt.value().empty())
             memcpy (&buf[offset], opt.value().data(), opt.value().size());
 
         offset += opt.value().size();
-
-        exit_if_buffer_overflow(offset, size, ec, checkBufferSizeOnly);
 
         optNumDelta = opt.number();
     }
 
     if (payload().size())
     {
-        exit_if_buffer_overflow(offset, size, ec, checkBufferSizeOnly);
-
+        exit_if_buffer_overflow(offset, 1, size, ec, checkBufferSizeOnly);
         if (!checkBufferSizeOnly)
         {
             buf [offset] = PAYLOAD_MARKER;
         }
 
         offset += sizeof(PAYLOAD_MARKER);
-        exit_if_buffer_overflow(offset, size, ec, checkBufferSizeOnly);
-        exit_if_buffer_overflow(offset + payload().size(), size, ec, checkBufferSizeOnly);
+        exit_if_buffer_overflow(offset, payload().size(), size, ec, checkBufferSizeOnly);
 
         if (!checkBufferSizeOnly)
         {
