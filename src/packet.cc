@@ -58,8 +58,6 @@ void Message::clear()
 
 void Packet::parse_header(const void * buffer, size_t size, error_code &ec)
 {
-    assert(buffer != nullptr);
-
     ec.clear();
 
     if (buffer == nullptr)
@@ -91,8 +89,6 @@ void Packet::parse_header(const void * buffer, size_t size, error_code &ec)
 
 void Packet::parse_token(const void * buffer, size_t size, std::error_code &ec)
 {
-    assert(buffer != nullptr);
-
     ec.clear();
 
     if (buffer == nullptr)
@@ -126,8 +122,6 @@ static bool parse_option(
         size_t &offset
     )
 {
-    assert(buffer != nullptr);
-
     if (buffer == nullptr)
         return false;
 
@@ -154,8 +148,6 @@ static bool parse_option(
 
 void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec)
 {
-    assert(buffer != nullptr);
-
     ec.clear();
 
     if (buffer == nullptr)
@@ -232,7 +224,6 @@ void Packet::parse_options(const void * buffer, size_t size, std::error_code &ec
 
 void Packet::parse_payload(const void * buffer, size_t size, std::error_code &ec)
 {
-    assert(buffer != nullptr);
     assert(size >= payload_offset());
 
     ec.clear();
@@ -258,8 +249,6 @@ void Packet::parse_payload(const void * buffer, size_t size, std::error_code &ec
 
 void Packet::parse(const void * buffer, size_t size, std::error_code &ec)
 {
-    assert(buffer != nullptr);
-
     ec.clear();
 
     if (buffer == nullptr)
@@ -294,10 +283,6 @@ void Packet::add_option(
         error_code &ec
     )
 {
-    assert(value != nullptr);
-    assert(number <= OPTION_MAX_NUMBER);
-    assert(length <= OPTION_MAX_LENGTH);
-
     ec.clear();
     if (value == nullptr)
     {
@@ -430,7 +415,6 @@ void Packet::serialize(
 #define exit_if_buffer_overflow(o, s, e, f)\
         if (!f && o > s)\
         {\
-            assert(0);\
             e = make_error_code(CoapStatus::COAP_ERR_BUFFER_SIZE);\
             return;\
         }
@@ -443,14 +427,12 @@ void Packet::serialize(
     {
         if (buffer == nullptr)
         {
-            assert(0);
             ec = make_system_error(EFAULT);
             return;
         }
 
         if (size < static_cast<size_t>(PACKET_MIN_LENGTH + token_length()))
         {
-            assert(0);
             ec = make_system_error(EINVAL);
             return;
         }
@@ -473,7 +455,6 @@ void Packet::serialize(
 
     if (token_length() > TOKEN_MAX_LENGTH)
     {
-        assert(0);
         ec = make_error_code(CoapStatus::COAP_ERR_TOKEN_LENGTH);
         return;
     }
@@ -511,14 +492,12 @@ void Packet::serialize(
         make_option(buf, size, offset, deltaNibble, optDelta, checkBufferSizeOnly, ec);
         if (ec)
         {
-            assert(0);
             return;
         }
 
         make_option(buf, size, offset, lengthNibble, opt.value().size(), checkBufferSizeOnly, ec);
         if (ec)
         {
-            assert(0);
             return;
         }
 
@@ -571,9 +550,6 @@ void Packet::make_request(
         std::size_t tokenLength
     )
 {
-    assert((payloadSize == 0 && payload == nullptr) || (payloadSize != 0 && payload != nullptr));
-    assert(tokenLength <= TOKEN_MAX_LENGTH);
-
     ec.clear();
 
     if ((payloadSize != 0 && payload == nullptr)
@@ -618,9 +594,14 @@ void Packet::prepare_answer(
         size_t payloadSize
     )
 {
-    assert((payloadSize == 0 && payload == nullptr) || (payloadSize != 0 && payload != nullptr));
-
     ec.clear();
+
+    if ((payloadSize != 0 && payload == nullptr)
+        || (payloadSize == 0 && payload != nullptr) )
+    {
+        ec = make_system_error(EFAULT);
+        return;
+    }
 
     version(COAP_VERSION);
     this->type(static_cast<std::uint8_t>(type));
