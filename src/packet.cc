@@ -382,12 +382,16 @@ void make_option(
         return;
     }
 
+    ec = make_error_code(CoapStatus::COAP_ERR_BUFFER_SIZE);
+
     if (firstParsing == MINUS_THIRTEEN)
     {
         if (checkBufferSizeOnly)
             offset++;
-        else
+        else {
+            if (offset + 1 > size) return;
             buffer [offset++] = secondParsing - MINUS_THIRTEEN_OPT_VALUE;
+        }
     }
     else if (firstParsing == MINUS_TWO_HUNDRED_SIXTY_NINE)
     {
@@ -395,14 +399,12 @@ void make_option(
             offset += 2;
         else
         {
+            if (offset + 2 > size) return;
             buffer [offset++] = (secondParsing - MINUS_TWO_HUNDRED_SIXTY_NINE_OPT_VALUE) >> 8;
             buffer [offset++] = (secondParsing - MINUS_TWO_HUNDRED_SIXTY_NINE_OPT_VALUE) & 0xFF;
         }
     }
-    if (!checkBufferSizeOnly && offset >= size)
-    {
-        ec = make_error_code(CoapStatus::COAP_ERR_BUFFER_SIZE);
-    }
+    ec.clear();
 }
 
 void Packet::serialize(
