@@ -141,6 +141,19 @@ lib_deps =
 
 The dependencies (cJSON, FreeRTOS and lwIP) are downloaded automatically by PlatformIO.
 
+## Use of AI tools
+
+The library source code (`api/`, `src/`, `examples/`) is written by hand.
+
+AI assistants are used as supporting tools for:
+
+- code review and finding bugs;
+- unit tests and fuzzing;
+- build and CI scripts;
+- documentation.
+
+Each proposal from AI assistants is verified by the maintainer before being implemented in the project.
+
 ## License
 
 This library is distributed under Apache license version 2.0.
