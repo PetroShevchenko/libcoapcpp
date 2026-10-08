@@ -334,6 +334,48 @@ TEST(testPacket, rejectOptionNumberAndLengthOverflow)
     }
 }
 
+TEST(testPacket, rejectCorruptedPacket)
+{
+    /*
+        There are 4 packets for testing
+
+        Common header of every packet:
+        0x40        Version 1, CON, token length 0
+        0x01        GET
+        0x00, 0x01  Message ID
+
+        Option that follows the header:
+        05 61 - error: option length exceeds the remainder
+        40 01 00 01 F0 - error: reserved nibble 15
+        49 01 00 01 - error: token length 9
+        40 01 00 - error: too short packet
+    */
+    const vector<TestCase> cases = {
+        {"length exceeds the remainder",  {0x40, 0x01, 0x00, 0x01, 0x05, 0x61},     CoapStatus::COAP_ERR_OPTION_LENGTH},
+        {"reserved nibble 15",            {0x40, 0x01, 0x00, 0x01, 0xF0},           CoapStatus::COAP_ERR_OPTION_DELTA},
+        {"token length 9",                {0x49, 0x01, 0x00, 0x01},                 CoapStatus::COAP_ERR_TOKEN_LENGTH},
+        {"too short packet",              {0x40, 0x01, 0x00},                       CoapStatus::COAP_ERR_PACKET_LENGTH},
+    };
+
+    for (const auto & tc : cases)
+    {
+        error_code ec;
+        Packet packet;
+
+        packet.parse(tc.message.data(), tc.message.size(), ec);
+
+#ifdef PRINT_TESTED_VALUES
+        print_error(tc.name, ec);
+#endif
+
+        const error_code expected = make_error_code(tc.expected);
+
+        EXPECT_EQ(ec, expected)
+            << "  actual:   " << ec.message() << "\n"
+            << "  expected: " << expected.message();
+    }
+}
+
 TEST(testPacket, parseMaxOptionNumber)
 {
     // 0xE0, 0xFE, 0xF2: delta 65535, the largest valid option number; length 0
