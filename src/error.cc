@@ -26,6 +26,9 @@ std::string CoapErrorCategory::message(int ev) const
         case CoapStatus::COAP_ERR_PROTOCOL_VERSION:
             return "Unsupported CoAP version";
 
+        case CoapStatus::COAP_ERR_PACKET_LENGTH:
+            return "Wrong the packet length";
+
         case CoapStatus::COAP_ERR_TOKEN_LENGTH:
             return "Too long the token length";
 
@@ -190,6 +193,9 @@ const char* error_code_to_str(CoapStatus e)
 
         case CoapStatus::COAP_ERR_PROTOCOL_VERSION:
             return "COAP_ERR_PROTOCOL_VERSION";
+
+        case CoapStatus::COAP_ERR_PACKET_LENGTH:
+            return "COAP_ERR_PACKET_LENGTH";
 
         case CoapStatus::COAP_ERR_TOKEN_LENGTH:
             return "COAP_ERR_TOKEN_LENGTH";
