@@ -1,6 +1,7 @@
 # libcoapcpp
 
 [![CI](https://github.com/PetroShevchenko/libcoapcpp/actions/workflows/ci.yml/badge.svg?branch=private%2Fdevelopment)](https://github.com/PetroShevchenko/libcoapcpp/actions/workflows/ci.yml)
+[![Fuzz](https://github.com/PetroShevchenko/libcoapcpp/actions/workflows/fuzz.yml/badge.svg?branch=private%2Fdevelopment)](https://github.com/PetroShevchenko/libcoapcpp/actions/workflows/fuzz.yml)
 [![License](https://img.shields.io/github/license/PetroShevchenko/libcoapcpp)](LICENSE)
 
 libcoapcpp is an open-source C++ implementattion of the constrained application protocol (CoAP).
