@@ -642,6 +642,126 @@ TEST(testPacket, serialize)
     delete [] buffer;
 }
 
+TEST(testPacket, serializeIntoExactBuffer)
+{
+    /*
+        There are 4 packets for testing, the first three end with an option that has no value
+
+        Common header of the first three packets:
+        0x40        Version 1, CON, token length 0
+        0x01        GET
+        0x00, 0x01  Message ID
+
+        Option that follows the header:
+        0x00              Delta 0 (If-Match); length 0
+        0xD0, 0x01        Delta 14 (Max-Age), one extended byte; length 0
+        0xE0, 0x00, 0x00  Delta 269, two extended bytes; length 0
+    */
+    const vector<vector<uint8_t>> messages = {
+        {0x40, 0x01, 0x00, 0x01, 0x00},
+        {0x40, 0x01, 0x00, 0x01, 0xD0, 0x01},
+        {0x40, 0x01, 0x00, 0x01, 0xE0, 0x00, 0x00},
+        vector<uint8_t>(testCoapPacket, testCoapPacket + sizeof(testCoapPacket)),  // token, options and payload
+    };
+
+    for (const auto & message : messages)
+    {
+        error_code ec;
+        Packet packet;
+
+        packet.parse(message.data(), message.size(), ec);
+        ASSERT_FALSE(ec) << "  actual: " << ec.message();
+
+        size_t size = 0;
+
+        packet.serialize(ec, nullptr, size, true);
+        ASSERT_FALSE(ec) << "  actual: " << ec.message();
+
+        vector<uint8_t> buffer(size);
+
+        packet.serialize(ec, buffer.data(), size);
+
+#ifdef PRINT_TESTED_VALUES
+        print_error(ec);
+#endif
+
+        EXPECT_FALSE(ec) << "  actual: " << ec.message();
+        EXPECT_EQ(buffer, message);
+    }
+}
+
+TEST(testPacket, rejectTooSmallBufferOnSerialize)
+{
+    /*
+        There are 4 packets for testing
+
+        Common header of every packet except the third one:
+        0x40        Version 1, CON, token length 0
+        0x01        GET
+        0x00, 0x01  Message ID
+
+        The rest of the packet:
+        0x00                          Delta 0 (If-Match); length 0
+        0xDD, 0x01, 0x00              Delta 14 and length 13, one extended byte each, followed by 13 bytes
+        0xEE, 0x00, 0x00, 0x00, 0x00  Delta 269 and length 269, two extended bytes each, followed by 269 bytes
+
+        The third packet:
+        0x42, 0x01, 0x00, 0x01  The same header with token length 2
+        0x11, 0x22              Token
+        0xB1, 0x61              Delta 11 (Uri-Path); length 1, value 'a'
+        0xFF, 0x62              Payload marker; payload 'b'
+    */
+    vector<uint8_t> extended13 = {0x40, 0x01, 0x00, 0x01, 0xDD, 0x01, 0x00};
+    extended13.resize(extended13.size() + 13, 0x61);
+
+    vector<uint8_t> extended14 = {0x40, 0x01, 0x00, 0x01, 0xEE, 0x00, 0x00, 0x00, 0x00};
+    extended14.resize(extended14.size() + 269, 0x61);
+
+    const vector<TestCase> cases = {
+        {"option without value",       {0x40, 0x01, 0x00, 0x01, 0x00},                               CoapStatus::COAP_ERR_BUFFER_SIZE},
+        {"one extended byte",          extended13,                                                   CoapStatus::COAP_ERR_BUFFER_SIZE},
+        {"token, option and payload",  {0x42, 0x01, 0x00, 0x01, 0x11, 0x22, 0xB1, 0x61, 0xFF, 0x62}, CoapStatus::COAP_ERR_BUFFER_SIZE},
+        {"two extended bytes",         extended14,                                                   CoapStatus::COAP_ERR_BUFFER_SIZE},
+    };
+
+    // The unit tests are built without sanitizers, so a write outside of the buffer is seen by a changed byte.
+    // The value is not present in the packets above.
+    const uint8_t untouched = 0xA5;
+
+    for (const auto & tc : cases)
+    {
+        error_code ec;
+        Packet packet;
+
+        packet.parse(tc.message.data(), tc.message.size(), ec);
+        ASSERT_FALSE(ec) << "  actual: " << ec.message();
+
+        const error_code expected = make_error_code(tc.expected);
+
+        // Every size that is smaller than the packet, so the buffer ends in every part of the frame
+        for (size_t given = 0; given < tc.message.size(); ++given)
+        {
+            vector<uint8_t> buffer(tc.message.size(), untouched);
+            size_t size = given;
+
+            packet.serialize(ec, buffer.data(), size);
+
+            EXPECT_EQ(ec, expected)
+                << "  TC name:  " << tc.name << ", buffer size " << given << "\n"
+                << "  actual:   " << ec.message() << "\n"
+                << "  expected: " << expected.message();
+
+            EXPECT_EQ(buffer[given], untouched)
+                << "  TC name:  " << tc.name << ", buffer size " << given << "\n"
+                << "  serialize() wrote outside of the buffer";
+        }
+
+#ifdef PRINT_TESTED_VALUES
+        print_error(tc.name, ec);
+#endif
+    }
+}
+
 TEST(testPacket, DataType)
 {
     const char * testString = "This is a test string";
