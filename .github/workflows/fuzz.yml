@@ -1,0 +1,66 @@
+name: Fuzz
+
+on:
+  push:
+    branches: [private/development]
+  pull_request:
+  # GitHub starts scheduled runs only from the default branch
+  schedule:
+    - cron: '0 3 * * 1'   # every Monday at 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Duration of every fuzz target, in seconds
+        default: '600'
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        # one entry per fuzz/fuzz_<target>.cc
+        target: [packet]
+    env:
+      # a smoke run for a push or a pull request, a long run once a week
+      FUZZ_SECONDS: ${{ github.event_name == 'schedule' && '3600' || inputs.seconds || '60' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # The fuzz targets need only the cJSON headers, wolfSSL and mbedTLS are not built here
+      - name: Checkout cJSON
+        run: git submodule update --init --depth 1 third-party/cJSON
+
+      # libFuzzer is a part of the compiler runtime, which is a separate package
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          echo 'extern "C" int LLVMFuzzerTestOneInput(const unsigned char *, unsigned long) { return 0; }' > /tmp/probe.cc
+          if ! clang++ -fsanitize=fuzzer,address,undefined /tmp/probe.cc -o /tmp/probe 2>/dev/null; then
+            sudo apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=3 update
+            sudo apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=3 install -y --no-install-recommends clang libclang-rt-dev
+          fi
+
+      - name: Fuzz
+        run: CXX=clang++ ./fuzzer_run.sh ${{ matrix.target }} "$FUZZ_SECONDS"
+
+      - name: Print crash inputs
+        if: failure()
+        run: |
+          for file in build/fuzz/crashes/${{ matrix.target }}/*; do
+            [ -f "$file" ] || continue
+            echo "$file"
+            xxd "$file"
+          done
+
+      - name: Upload crash inputs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-crashes-${{ matrix.target }}
+          path: build/fuzz/crashes/${{ matrix.target }}/
+          if-no-files-found: ignore
