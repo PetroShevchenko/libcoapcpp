@@ -16,6 +16,7 @@ Existing targets:
 | Target | Module | Entry points |
 |---|---|---|
 | `packet` | `src/packet.cc` | `Packet::parse`, `Packet::serialize` |
+| `blockwise` | `src/blockwise.cc` | `Block1::get_header`, `Block2::get_header`, `encode_block_option`, `decode_size_option` |
 
 ## How it works
 
@@ -149,6 +150,9 @@ Rules for the body:
 - **Allocate every buffer on the heap with its exact size** (`new uint8_t[size]`). ASan does
   not see an overflow into the unused tail of a larger buffer, and it is less precise on the
   stack.
+- **Data kept in a `std::vector` is covered too.** `FUZZ_FLAGS` defines
+  `_GLIBCXX_SANITIZE_VECTOR`, so ASan reports an access between the size and the capacity of
+  a vector, for example a read past the end of an option value.
 - **Be deterministic.** No `rand()`, time or state kept between calls. If a value has to vary,
   derive it from the input, as `pick_size()` in `fuzz_packet.cc` does. A crash file must fail
   the same way on every run.

@@ -24,6 +24,8 @@ set(
         -fno-omit-frame-pointer
         -g
         -O1
+        # libstdc++: ASan also sees an access between the size and the capacity of a std::vector
+        -D_GLIBCXX_SANITIZE_VECTOR
 )
 
 #############################################################
@@ -51,5 +53,35 @@ target_compile_options(
 
 target_link_libraries(
     fuzz_packet PRIVATE
+        ${FUZZ_FLAGS}
+)
+
+#############################################################
+# fuzz_blockwise
+#############################################################
+
+add_executable(
+    fuzz_blockwise
+        ${CMAKE_CURRENT_LIST_DIR}/fuzz_blockwise.cc
+        ${SRC_DIR}/blockwise.cc
+        ${SRC_DIR}/packet.cc
+        ${SRC_DIR}/uri.cc
+        ${SRC_DIR}/error.cc
+)
+
+target_include_directories(
+    fuzz_blockwise PRIVATE
+        ${INC_DIR}
+        ${CJSON_PATH}
+)
+
+target_compile_options(
+    fuzz_blockwise PRIVATE
+        -Wall -Wextra -Wpedantic -Wshadow
+        ${FUZZ_FLAGS}
+)
+
+target_link_libraries(
+    fuzz_blockwise PRIVATE
         ${FUZZ_FLAGS}
 )
