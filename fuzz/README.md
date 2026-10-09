@@ -66,6 +66,19 @@ During a run libFuzzer prints lines like this:
 grows the fuzzer is still finding new code. A run that ends with `Done ... runs` and no report
 found nothing.
 
+## CI
+
+The `Fuzz` workflow (`.github/workflows/fuzz.yml`) runs every target of its matrix:
+
+| Trigger | Duration of every target |
+|---|---|
+| Push to `private/development`, pull request | 60 seconds |
+| Every Monday, 03:00 UTC | 1 hour |
+| Manual start (`workflow_dispatch`) | Set in the `seconds` input, 600 by default |
+
+A failed run prints the crash inputs as hex in the log and uploads them as the artifact
+`fuzz-crashes-<target>`. Download it and continue from step 6 below.
+
 ## Adding a fuzz target
 
 The steps below use `<target>` for the name. It is the module name: `src/core_link.cc` gives
@@ -260,7 +273,18 @@ For every cause:
 4. Copy the minimized file to `fuzz/corpus/<target>/` under a descriptive name.
 5. Run the fuzzer again, longer. A fix often uncovers the next bug that the first one hid.
 
-### 8. Commit
+### 8. Add the target to CI
+
+Add the name to the matrix of the `fuzz-smoke` job in `.github/workflows/fuzz.yml`:
+
+```yaml
+        target: [packet, <target>]
+```
+
+Do it after step 7, when a local run of several minutes finds nothing: a target that still
+crashes keeps the workflow red.
+
+### 9. Commit
 
 One logical change per commit:
 
@@ -268,8 +292,9 @@ One logical change per commit:
 |---|---|
 | `[FUZZ] Add libFuzzer wrapper for <what is fuzzed>` | `fuzz_<target>.cc`, the CMake block, the seeds, a new row in the table at the top of this file |
 | `[<MODULE>] Fix ...` | One commit per fixed cause |
-| `[TEST] Added regression test for ...` | The test of that cause |
+| `[TEST] Add regression test for ...` | The test of that cause |
 | `[FUZZ] Add seed for ...` | The minimized crash file |
+| `[CI] Add fuzz target <target>` | The new matrix entry |
 
 ## Checklist
 
@@ -281,3 +306,4 @@ One logical change per commit:
 - [ ] `fuzz_<target>.cc` compiles without warnings.
 - [ ] Every seed runs without a crash: `./build/fuzz/fuzz_<target> fuzz/corpus/<target>/*`.
 - [ ] The target is listed in the table at the top of this file.
+- [ ] The target is in the matrix of `.github/workflows/fuzz.yml`.
