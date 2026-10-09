@@ -50,6 +50,7 @@ and the known rejected ones. Without seeds it has to discover the format from no
 Requirements: clang with libFuzzer (`clang` and, on Debian or Ubuntu, `libclang-rt-dev`), CMake.
 
 ```sh
+./fuzzer_run.sh                                         # list of the available targets
 ./fuzzer_run.sh packet                                  # 60 seconds
 ./fuzzer_run.sh packet 600                              # 10 minutes
 ./fuzzer_run.sh packet 600 -fork=4 -ignore_crashes=1    # 4 processes, collect every crash

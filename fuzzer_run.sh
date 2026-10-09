@@ -2,9 +2,10 @@
 
 # Builds the fuzz targets with clang (libFuzzer, ASan, UBSan) and runs one of them.
 #
-# Usage: ./fuzzer_run.sh [target] [seconds] [libFuzzer options...]
+# Usage: ./fuzzer_run.sh <target> [seconds] [libFuzzer options...]
 #
-#   ./fuzzer_run.sh                                      # fuzz_packet for 60 seconds
+#   ./fuzzer_run.sh                                      # list of the available targets
+#   ./fuzzer_run.sh packet                               # fuzz_packet for 60 seconds
 #   ./fuzzer_run.sh packet 600                           # fuzz_packet for 10 minutes
 #   ./fuzzer_run.sh packet 600 -fork=4 -ignore_crashes=1 # do not stop at the first crash
 #
@@ -15,11 +16,28 @@
 
 set -e
 
-TARGET=${1:-packet}
+TARGET=$1
 SECONDS_TO_RUN=${2:-60}
 shift $(( $# < 2 ? $# : 2 ))
 
 ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# every fuzz/fuzz_<target>.cc is a target
+print_targets() {
+    echo "Available targets:"
+    for file in "$ROOT_DIR"/fuzz/fuzz_*.cc ; do
+        [ -f "$file" ] || continue
+        file=$(basename "$file" .cc)
+        echo "    ${file#fuzz_}"
+    done
+}
+
+if [ -z "$TARGET" ] ; then
+    echo "Usage: $0 <target> [seconds] [libFuzzer options...]"
+    print_targets
+    exit 1
+fi
+
 BUILD_DIR=$ROOT_DIR/build/fuzz
 SEED_DIR=$ROOT_DIR/fuzz/corpus/$TARGET
 CORPUS_DIR=$BUILD_DIR/corpus/$TARGET
@@ -27,6 +45,7 @@ CRASH_DIR=$BUILD_DIR/crashes/$TARGET
 
 if [ ! -f "$ROOT_DIR/fuzz/fuzz_$TARGET.cc" ] ; then
     echo "Error: unknown fuzz target '$TARGET'"
+    print_targets
     exit 1
 fi
 
