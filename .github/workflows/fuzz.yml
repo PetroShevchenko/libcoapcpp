@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         # one entry per fuzz/fuzz_<target>.cc
-        target: [packet]
+        target: [packet, blockwise]
     env:
       # a smoke run for a push or a pull request, a long run once a week
       FUZZ_SECONDS: ${{ github.event_name == 'schedule' && '3600' || inputs.seconds || '60' }}
