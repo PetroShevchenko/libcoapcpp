@@ -85,3 +85,31 @@ target_link_libraries(
     fuzz_blockwise PRIVATE
         ${FUZZ_FLAGS}
 )
+
+#############################################################
+# fuzz_core_link
+#############################################################
+
+add_executable(
+    fuzz_core_link
+        ${CMAKE_CURRENT_LIST_DIR}/fuzz_core_link.cc
+        ${SRC_DIR}/core_link.cc
+        ${SRC_DIR}/uri.cc
+        ${SRC_DIR}/error.cc
+)
+
+target_include_directories(
+    fuzz_core_link PRIVATE
+        ${INC_DIR}
+)
+
+target_compile_options(
+    fuzz_core_link PRIVATE
+        -Wall -Wextra -Wpedantic -Wshadow
+        ${FUZZ_FLAGS}
+)
+
+target_link_libraries(
+    fuzz_core_link PRIVATE
+        ${FUZZ_FLAGS}
+)

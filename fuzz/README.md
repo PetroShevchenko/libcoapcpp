@@ -17,6 +17,7 @@ Existing targets:
 |---|---|---|
 | `packet` | `src/packet.cc` | `Packet::parse`, `Packet::serialize` |
 | `blockwise` | `src/blockwise.cc` | `Block1::get_header`, `Block2::get_header`, `encode_block_option`, `decode_size_option` |
+| `core_link` | `src/core_link.cc` | `CoreLink::parse_core_link`, `CoreLink::create_core_link`, `core_link::create_record_from_path_if_contains` |
 
 ## How it works
 
