@@ -26,6 +26,7 @@ namespace coap
 {
 
 const uint8_t BLOCK_SZX_MASK  = 0x7;
+const uint8_t BLOCK_SZX_RESERVED = 0x7;
 const uint8_t BLOCK_M_BIT     = 3;
 const uint8_t BLOCK_NUM_SHIFT = 4;
 const uint8_t BLOCK_MIN_SIZE = 16;
@@ -75,6 +76,11 @@ bool Blockwise::decode_block_option(const Option &opt)
 
     {
         uint8_t szx = opt.value()[optLen - 1] & BLOCK_SZX_MASK;
+        if (szx >= BLOCK_SZX_RESERVED)
+        {
+            debug("Reserved block size exponent");
+            return false;
+        }
         m_size = static_cast<uint16_t>(pow(2, szx + 4));
         m_more = opt.value()[optLen - 1] & (1 << BLOCK_M_BIT);
     }
