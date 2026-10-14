@@ -110,3 +110,46 @@ TEST(testCoreLink, parseCoreLink)
 #endif
 
 }
+
+static vector<uint8_t> to_bytes(const char *text)
+{ return vector<uint8_t>(text, text + strlen(text)); }
+
+TEST(testCoreLink, rejectUnterminatedString)
+{
+    /*
+        There are 3 payloads for testing
+
+        Every payload has a quoted string that is not closed, so the parser must not
+        split the payload into records or accept the string:
+        </a>;title="x           The string runs to the end of the payload
+        </a>;title="x,</b>      The record separator is inside the string, not between two records
+        </a>;title="x\"         The last quote is escaped, so it does not close the string
+    */
+    const vector<TestCase> cases = {
+        {"string to the end of payload", to_bytes("</a>;title=\"x"),       CoapStatus::COAP_ERR_PARSE_CORE_LINK},
+        {"separator inside string",      to_bytes("</a>;title=\"x,</b>"),  CoapStatus::COAP_ERR_PARSE_CORE_LINK},
+        {"escaped closing quote",        to_bytes("</a>;title=\"x\\\""),   CoapStatus::COAP_ERR_PARSE_CORE_LINK},
+    };
+
+    for (const auto & tc : cases)
+    {
+        error_code ec;
+        CoreLink parser;
+
+        // parse_core_link() takes a terminated C string
+        const string text(tc.message.begin(), tc.message.end());
+
+        parser.parse_core_link(text.c_str(), ec);
+
+#ifdef PRINT_TESTED_VALUES
+        print_error(tc.name, ec);
+#endif
+
+        const error_code expected = make_error_code(tc.expected);
+
+        EXPECT_EQ(ec, expected)
+            << "  TC name:  " << tc.name << "\n"
+            << "  actual:   " << ec.message() << "\n"
+            << "  expected: " << expected.message();
+    }
+}
