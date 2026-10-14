@@ -51,15 +51,30 @@ static bool is_same_parameter(const CoreLinkParameter &first, const CoreLinkPara
     return first.value.asString == second.value.asString;
 }
 
-static void compare_records(const vector<CoreLinkType> &first, const vector<CoreLinkType> &second)
+static void compare_records(const vector<CoreLinkType> &first, const vector<CoreLinkType> &second,
+                            const char * input, const string &written)
 {
     if (first.size() != second.size())
+    {
+        fprintf(stderr, "input:   [%s]\nwritten: [%s]\nrecords: %zu vs %zu\n",
+                input, written.c_str(), first.size(), second.size());
         fail("number of records differs after writing and parsing");
+    }
 
     for (size_t i = 0; i < first.size(); i++)
     {
         if (first[i].uri.path() != second[i].uri.path())
+        {
+            fprintf(stderr,
+                    "input:         [%s]\n"
+                    "written:       [%s]\n"
+                    "record #%zu path (parsed):   [%s]\n"
+                    "record #%zu path (reparsed): [%s]\n",
+                    input, written.c_str(),
+                    i, first[i].uri.path().c_str(),
+                    i, second[i].uri.path().c_str());
             fail("path of a record differs after writing and parsing");
+        }
         if (first[i].parameters.size() != second[i].parameters.size())
             fail("number of parameters differs after writing and parsing");
 
@@ -104,7 +119,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t * data, size_t size)
     if (ec)
         fail("written text cannot be parsed", ec);
 
-    compare_records(parsed.payload(), again.payload());
+    compare_records(parsed.payload(), again.payload(), text.get(), parsed.core_link());
     check_records_from_path(parsed.payload());
 
     return 0;
