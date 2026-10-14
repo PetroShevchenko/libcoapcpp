@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <cstring>
-#include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -14,10 +14,10 @@ static const char *root = "/.well-known/core";
 static const char request = '?';
 static const char *beginUri = "</";
 static const char *endUri = ">";
-static const char *recordSeparator = ",";
 static const char *parameterSeparator = ";";
 static const char *equal = "=";
 static const char *quote = "\"";
+static constexpr char recordSeparator = ',';
 
 CoreLinkType::CoreLinkType(CoreLinkType &&other)
 {
@@ -84,6 +84,84 @@ void CoreLink::create_core_link(std::error_code &ec)
 	}
 }
 
+// remove spaces and symbols '\n', '\t', '\r'
+static void clean_payload(std::string &payload)
+{
+	payload.erase(
+		std::remove_if(payload.begin(), payload.end(),
+			[](unsigned char c)
+			{
+				return c == '\n' || c == '\r';
+			}
+		),
+		payload.end()
+	);
+
+	bool inQuote = false;
+	size_t writeIndex = 0;
+
+	for (size_t readIndex = 0; readIndex < payload.size(); ++readIndex)
+	{
+		const char c = payload[readIndex];
+		if (inQuote)
+		{
+			// do not remove escaped symbols if they are inside quotes
+			payload[writeIndex++] = c;
+			if (c == '\\' && readIndex + 1 < payload.size())
+				payload[writeIndex++] = payload[++readIndex]; // escaped character as-is
+			else if (c == '"')
+				inQuote = false; // closing quote
+			continue;
+		}
+		if (c == ' ' || c == '\t')
+			continue; // skip space or '\t' if it is not inside quotes
+		if (c == '"')
+			inQuote = true; // opening quote
+		payload[writeIndex++] = c;
+	}
+	payload.resize(writeIndex);
+}
+
+static std::vector<std::string> split_records(const std::string &payload, std::error_code &ec)
+{
+	std::vector<std::string> out;
+	bool inUri   = false;   // between '<' and '>'
+	bool inQuote = false;   // between '"' and '"'
+	size_t start  = 0;
+
+	for (size_t i = 0; i < payload.size(); ++i)
+	{
+		const char c = payload[i];
+
+		if (inQuote)
+		{
+			if (c == '\\' && i + 1 < payload.size()) ++i;	// skip escaped symbol
+			else if (c == '"') inQuote = false;			// closing quote
+		}
+		else if (inUri)
+		{
+			if (c == '>') inUri = false; 	// closing uri
+		}
+		else if (c == '"') inQuote = true; // opening quote
+		else if (c == '<') inUri = true; 	// opening uri
+		else if (c == recordSeparator) 	// record separator
+		{
+			if (i > start) 			// skip empty records
+				out.emplace_back(payload, start, i - start); // store record
+			start = i + 1; 			// next record starts after separator
+		}
+	}
+	if (start < payload.size())
+		out.emplace_back(payload, start, payload.size() - start); // store the last record
+
+	if (inQuote || inUri)
+	{
+		ec = make_error_code(CoapStatus::COAP_ERR_PARSE_CORE_LINK);
+		return {};
+	}
+	return out; // return vector of records
+}
+
 void CoreLink::parse_core_link(const char *coreLink, std::error_code &ec)
 {
 	if (coreLink == nullptr)
@@ -91,33 +169,18 @@ void CoreLink::parse_core_link(const char *coreLink, std::error_code &ec)
 		ec = make_system_error(EFAULT);
 		return;
 	}
+	std::string buffer(coreLink);
 
-	size_t length = strlen(coreLink) + sizeof('\0');
+	clean_payload(buffer);
 
-	char *buffer = new char [length];
-	if (buffer == nullptr)
-	{
-		ec = make_error_code(CoapStatus::COAP_ERR_MEMORY_ALLOCATE);
-		return;
-	}
-	memset(buffer, 0, length);
-	strncpy(buffer, coreLink, length);
+	std::vector<std::string> records = split_records(buffer, ec);
+	if (ec) return;
 
-	std::vector<std::string> records;
-	char *token = strtok(buffer, recordSeparator);
-	while(token != NULL)
-	{
-
-		records.push_back(token);
-		token = strtok(NULL, recordSeparator);
-	}
-	for (auto record: records)
+	for (const auto &record: records)
 	{
 		parse_record(record, ec);
-		if (ec.value()) break;
+		if (ec) break;
 	}
-
-	delete [] buffer;
 }
 
 void CoreLink::parse_record(const string &line, std::error_code &ec)
