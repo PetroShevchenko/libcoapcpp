@@ -4,6 +4,9 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
 
 using namespace std;
 
@@ -11,7 +14,6 @@ namespace coap
 {
 
 static const char *root = "/.well-known/core";
-static const char request = '?';
 static const char *beginUri = "</";
 static const char *endUri = ">";
 static const char *parameterSeparator = ";";
@@ -154,7 +156,7 @@ static std::vector<std::string> split_records(const std::string &payload, std::e
 	if (start < payload.size())
 		out.emplace_back(payload, start, payload.size() - start); // store the last record
 
-	if (inQuote || inUri)
+	if (inQuote || inUri || out.empty())
 	{
 		ec = make_error_code(CoapStatus::COAP_ERR_PARSE_CORE_LINK);
 		return {};
@@ -187,59 +189,78 @@ void CoreLink::parse_record(const string &line, std::error_code &ec)
 {
 	ec = make_error_code(CoapStatus::COAP_ERR_PARSE_CORE_LINK);
 
-	string::size_type offset = line.find("<");
+	if (line.empty() || line[0] != '<') return;
 
-	if (offset == string::npos)	return;
+	string::size_type offset = 0;
 
 	string::size_type closingBracket = line.find(">", offset + 1);
+	if (closingBracket == string::npos) return;
 
-	if (closingBracket == string::npos)	return;
-
-	string::size_type slash = line.find("</");
+	string::size_type start = offset + 1;
+	if (start < closingBracket && line[start] == '/')
+		++start;
 
 	CoreLinkType record;
+	record.uri.path(line.substr(start, closingBracket - start).c_str());
 
-	if (slash != string::npos)
+	string::size_type next = closingBracket + 1;
+	if (next < line.size() && line[next] != ';') return;
+
+	offset = next;
+
+	while (offset < line.size()) // line[offset] == ';'
 	{
-		record.uri.path(line.substr(slash + strlen("</"), closingBracket - slash - strlen("</")).c_str());
-	}
-	else
-	{
-		record.uri.path(line.substr(offset + strlen("<"), closingBracket - offset - strlen("<")).c_str());
-	}
+		string::size_type nameStart = offset + 1;
+		string::size_type nameEnd = line.find_first_of("=;", nameStart);
 
-	offset = closingBracket;
+		// parameter without a value or an empty name
+		if (nameEnd == string::npos || line[nameEnd] != '=' || nameEnd == nameStart)
+			return;
 
-	while(true)
-	{
-		offset = line.find(parameterSeparator, offset + 1);
-
-		if (offset == string::npos) break;
-
-		CoreLinkParameter::Value value;
 		CoreLinkParameter param;
+		param.name = line.substr(nameStart, nameEnd - nameStart);
 
-		string::size_type separator = line.find(equal, offset + 1);
-		if (separator == string::npos) return;
+		string::size_type valueStart = nameEnd + 1;
+		string::size_type valueEnd; // position just after the value
 
-		param.name = line.substr(offset + 1, separator - offset - 1);
-
-		if ( strncmp(line.substr(separator + 1, 1).c_str(), quote, strlen(quote)) == 0)
+		if (valueStart < line.size() && line[valueStart] == '"')
 		{
-			value.type = CoreLinkParameter::STRING;
-			string::size_type end = line.find("\"",separator + sizeof("\"") + 1);
-			value.asString.assign(line.substr(separator + strlen("=\""), end - separator - strlen("\"") - 1));
+			string::size_type closeQuote = line.find('"', valueStart + 1);
+			if (closeQuote == string::npos) return; // unclosed quote
+
+			param.value.type = CoreLinkParameter::STRING;
+			param.value.asString = line.substr(valueStart + 1, closeQuote - valueStart - 1);
+			valueEnd = closeQuote + 1;
 		}
 		else
 		{
-			value.type = CoreLinkParameter::NUMBER;
-			string::size_type end = line.find(";",separator + 1);
-			value.asNumber = atoi(line.substr(separator + 1, end - separator - 1).c_str());
+			valueEnd = line.find(';', valueStart);
+			if (valueEnd == string::npos)	valueEnd = line.size();
+
+			const char *first = line.data() + valueStart;
+			const char *last  = line.data() + valueEnd;
+
+			if (first == last || *first < '0' || *first > '9')
+				return;
+
+			char *end = nullptr;
+			errno = 0;
+			unsigned long number = strtoul(first, &end, 10);
+
+			if (errno == ERANGE || end != last || number > UINT_MAX)
+				return; // overflow or garbage after the number
+
+			param.value.type = CoreLinkParameter::NUMBER;
+			param.value.asNumber = static_cast<unsigned int>(number);
 		}
-		param.value = move(value);
-		record.parameters.push_back(move(param));
+
+		// after the value — only ';' or the end
+		if (valueEnd < line.size() && line[valueEnd] != ';') return;
+
+		record.parameters.push_back(std::move(param));
+		offset = valueEnd; // next search — after the value
 	}
-	add_record(move(record));
+	add_record(std::move(record));
 	ec.clear();
 }
 
