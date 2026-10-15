@@ -312,45 +312,32 @@ bool create_record_from_path_if_contains(
 			std::error_code &ec
 		)
 {
-	if (path == nullptr)
-	{
-		ec = make_system_error(EFAULT);
-		return false;
-	}
+    if (path == nullptr)
+    {
+        ec = make_system_error(EFAULT);
+        return false;
+    }
 
-	UriPath comparedPath(path, ec);
-	if (ec.value())
-		return false;
+    UriPath comparedPath(path, ec);
+    if (ec)
+        return false;
 
-	for (size_t i = 0, j = 0; i < in.uri.uri().asString().size(); i++)
-	{
-		if (comparedPath.uri().asString()[j] == in.uri.uri().asString()[i])
-		{
-			for(size_t k = i + 1; k < in.uri.uri().asString().size(); ++k)
-			{
-				out.uri.uri().asString().push_back(comparedPath.uri().asString()[j++]);
-				if (j == comparedPath.uri().asString().size())
-				{
-					for(size_t l = k; l < in.uri.uri().asString().size(); ++l)
-						out.uri.uri().asString().push_back(in.uri.uri().asString()[l]);
+    const auto &haystack = in.uri.uri().asString();
+    const auto &needle   = comparedPath.uri().asString();
 
-					out.uri.uri_to_path();
-					std::copy(in.parameters.begin(), in.parameters.end(),
-						std::back_inserter(out.parameters));
-					return true;
-				}
+    if (needle.empty())
+        return false;
 
-				if (comparedPath.uri().asString()[j] != in.uri.uri().asString()[k])
-				{
-					j = 0;
-					i++;
-					out.uri.uri().asString().clear();
-					break;
-				}
-			}
-		}
-	}
-	return false;
+    auto it = std::search(haystack.begin(), haystack.end(),
+                          needle.begin(), needle.end());
+    if (it == haystack.end())
+        return false;
+
+    out.uri.uri().asString().assign(it, haystack.end());
+    out.uri.uri_to_path();
+    out.parameters.insert(out.parameters.end(),
+                          in.parameters.begin(), in.parameters.end());
+    return true;
 }
 
 }//namespace core_link
