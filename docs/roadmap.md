@@ -1,8 +1,10 @@
 # libcoapcpp Roadmap
 
-Status as of 2026-10-06.
+Status as of 2026-10-18.
 
-This document describes the current state of the project and the sequence of steps toward the target structure from the [architecture description](Architecture.md).
+This document describes the current state of the project and the sequence of steps toward the target structure from the [architecture description](architecture.md).
+
+The first consumer of the library is the [CoAP Smart Home](coap_smart_home_system.md) system. The requirements it puts on the library are numbered R1–R26 in the [architecture description](architecture.md#coap-smart-home-requirements); the stages below refer to them, and [Mapping to CoAP Smart Home stages](#mapping-to-coap-smart-home-stages) shows which library stage each system stage needs.
 
 The conclusions about the code come from reading the source files and the repository history. The code was not built or run in the process, so everything concerning parser behavior must be confirmed with tests.
 
@@ -15,6 +17,7 @@ The conclusions about the code come from reading the source files and the reposi
 - **Removed in commit `60f749e` (2023-01-15).** 149 files: the library's network layer (sockets for POSIX and lwIP, DNS, UDP client and server, a DTLS client on wolfSSL) and the examples for NUCLEO-F429ZI, Raspberry Pi Pico, and STM32MP157A-DK1. All of it is available in the history at `60f749e^`.
 - **The `platformio` branch.** It has diverged from `main` structurally (`api/` renamed to `include/`, wolfSSL removed), so it cannot be merged. It carries the tags `v1.0.0`–`v1.0.5`. Its `coap-server` example is a stub that only blinks an LED.
 - **Open issues.** #1 and #2, both about out-of-bounds reads in `src/packet.cc`.
+- **Gaps relative to CoAP Smart Home.** `OptionNumber` in `consts.h` has no Observe (6). The CoRE Link parser accepts only attributes with `=` and unquoted values that are numbers, so a record with `;obs` or `if=core.s` is dropped (R13). There are no helpers for Uri-Query and Location-Path (R5, R15). There is no support for ESP32. DTLS existed only as a wolfSSL client and was removed; there is no server role with PSK (R16–R19). SenML-CBOR is absent (R14).
 
 ## Main problems
 
@@ -29,6 +32,8 @@ The conclusions about the code come from reading the source files and the reposi
 
 Position libcoapcpp as a modern C++ CoAP library for microcontrollers: a core without I/O and with thin transport adapters. In this niche libcoap is heavy, and the C++ alternatives are either abandoned or aimed at Arduino.
 
+CoAP Smart Home sets the priorities: ESP32 and OpenWrt join the target platforms, and DTLS-PSK in both roles, Observe on both sides, and streaming block-wise become mandatory rather than "later".
+
 ## Stages
 
 | Stage | Result | Release |
@@ -38,9 +43,24 @@ Position libcoapcpp as a modern C++ CoAP library for microcontrollers: a core wi
 | 3. New directory structure | Engine in the library, examples separated from boards | `v1.1.0` or `v2.0.0` |
 | 4. Microcontrollers | One `coap-server` for all boards, `platformio` in `main` | per board |
 | 5. Full CoAP | Message layer, resource API, Observe | first public release |
-| 6. Visibility | PlatformIO Registry, ESP-IDF, interoperability tests | later |
+| 6. Visibility and packaging | PlatformIO Registry, OpenWrt package, interoperability tests | later |
 
-Stages 4 and 5 do not depend on each other, but both build on stage 3.
+Stages 4 and 5 do not depend on each other, but both build on stage 3. The PoC of CoAP Smart Home needs part of each: the ESP32 board from stage 4 and the message layer with Observe from stage 5.
+
+## Mapping to CoAP Smart Home stages
+
+| System stage | What the library must provide | Requirements | Library stage |
+|---|---|---|---|
+| 0.1 PoC | `Endpoint` with the message layer, server and client API, Observe on both sides, SenML-JSON; embedding in the gateway's event loop on Linux; the ESP32 board | R1–R5, R7–R9, R14, R15, R21 | 1–3, 5; ESP32 from 4 |
+| 0.2 Registration and identity | Uri-Query and Location-Path, Block1, CoRE Link with `obs` and ptoken values, `/.well-known/core` with filtering | R5, R6, R12, R13 | 5 |
+| 0.3 Stock firmware and SDK | Resources created at run time, PlatformIO and the ESP-IDF component, Pico W | R5, R21, R22 | 4 |
+| 0.4 Provisioning and security | DTLS-PSK on mbedTLS, a server with sessions and `PskStore`, identity in handlers, both directions over one association | R16–R19 | 4 (DTLS) |
+| 0.5 OTA | Streaming Block2 on both sides with resume and ETag | R10, R11 | 5 |
+| 0.7 OpenWrt | Package, musl build, memory budget | R22, R23 | 6 |
+| 1.0 Stable | Interoperability in CI, limits, fuzzing of all parsers | R24, R25 | 1, 6 |
+| after 1.0 | OSCORE and EDHOC, multicast, SenML-CBOR, STM32 | R14, R20, R26 | 6 |
+
+The system's PoC does not need DTLS: it runs over plain UDP inside the LAN. Everything up to 0.4 can be developed on `boards/posix` and ESP32 without the security layer.
 
 ### Stage 1. Hygiene
 
@@ -100,6 +120,7 @@ Done when: `src/` builds with `arm-none-eabi-g++` without any port, and the `gre
 - [ ] `senml_json.h`: replace `#include "cJSON.h"` with a forward declaration `struct cJSON;`.
 - [ ] `packet.h`: move `DataType` into a separate header so that the packet codec does not drag cJSON along.
 - [ ] `packet.h`: replace the bit fields under `#pragma pack` with masks and shifts; after that `is_little_endian_byte_order()` becomes unnecessary.
+- [ ] `consts.h`: add `OBSERVE = 6` to `OptionNumber` and helpers for uint option values (R15). This is an addition; the API stays compatible.
 
 #### Port interfaces and POSIX ports
 
@@ -107,6 +128,7 @@ Done when: `src/` builds with `arm-none-eabi-g++` without any port, and the `gre
 - [ ] `packet.cc`: take the token and Message ID from `coap::port::Random` instead of `srand(time(nullptr))` and `rand()`. On a microcontroller without an RTC, the old scheme yields the same sequence after every restart.
 - [ ] Log through `coap::port::Log`; remove the global `USE_SPDLOG` and the `debug(...)`, `set_level(...)` macros.
 - [ ] Add `port/net/posix` and `port/os/posix`. Take the transport code from the old `src/unix/unix_socket.cc`.
+- [ ] `Transport::peer_identity` with a default implementation that returns `false` (R18); `native_handle()` in `port/net/posix` for the application's own `poll` (R3).
 - [ ] Add fake implementations in `test/mocks/`.
 - [ ] Bring back `udp-echo` as a smoke test of the port and the shortest sample of a `Transport` implementation.
 
@@ -117,6 +139,7 @@ Done when: `src/` builds with `arm-none-eabi-g++` without any port, and the `gre
 - [ ] Remove the global `CMAKE_CXX_FLAGS` with `-O0 -ggdb -frtti`, the global `include_directories`, and `remove_definitions(-DNDEBUG)`.
 - [ ] Pull in third-party libraries through `find_package` or `FetchContent`, and only when needed.
 - [ ] Add `install` and CMake package export, `enable_testing()` and `add_test`.
+- [ ] A `.pc` file for pkg-config, `BUILD_SHARED_LIBS`, the system mbedTLS through `find_package` with `third-party/` as a fallback (R22).
 - [ ] Add toolchain files in `cmake/toolchains/` and a cross-compilation check of the core in CI.
 - [ ] Move `firmware.bin` and the images out of the repository; add `.pio/` to `.gitignore`.
 
@@ -150,16 +173,26 @@ Where the existing files move:
 
 Done when: `examples/coap-server/` builds unchanged for all boards, and each board directory contains only hardware initialization, port creation, and registration of its own resources.
 
-The order follows the hardware at hand:
+ESP32 comes first: it is the MVP platform of CoAP Smart Home. Pico W follows, needed by system 1.0. The rest follow the hardware at hand:
 
 | Order | Board | What it requires |
 |---|---|---|
-| 1 | `nucleo-f429zi` | `port/net/lwip` (sockets), `port/os/freertos`, `port/hal/stm32`; the BSP from `60f749e^`; `/rtc` as a resource |
+| 1 | `esp32-devkitc` | `port/net/lwip` (sockets), `port/os/freertos` (`clock.cc` only), `port/hal/esp32`; the ESP-IDF component |
 | 2 | `pico-w` | `port/hal/pico`; ADXL345 as a resource |
-| 3 | `pico-spi` (firmware and gateway) | a shared frame codec in `boards/pico-spi/common` |
-| 4 | `nucleo-h743zi` | a new BSP, everything else unchanged |
-| 5 | `pico-eth` | an RMII-on-PIO driver as an lwIP `netif`; adds no ports |
-| separately | `dtls-echo-server` | `port/net/dtls/wolfssl`, then `mbedtls` |
+| 3 | `nucleo-f429zi` | `port/net/lwip` (sockets), `port/os/freertos`, `port/hal/stm32`; the BSP from `60f749e^`; `/rtc` as a resource |
+| 4 | `pico-spi` (firmware and gateway) | a shared frame codec in `boards/pico-spi/common` |
+| 5 | `nucleo-h743zi` | a new BSP, everything else unchanged |
+| 6 | `pico-eth` | an RMII-on-PIO driver as an lwIP `netif`; adds no ports |
+| separately | `dtls-echo-server` | `port/net/dtls/mbedtls`, then `wolfssl`; needed by system 0.4 |
+
+#### ESP32
+
+- [ ] `port/hal/esp32`: `Random` on `esp_fill_random`, `Clock` on `esp_timer_get_time`.
+- [ ] `boards/esp32-devkitc`: an ESP-IDF project with the same `examples/coap-server`. lwIP sockets from ESP-IDF go through `udp_transport_sockets.cc`; `heap.cc` is not needed.
+- [ ] ESP-IDF component: `idf_component.yml` and an `idf_component_register` branch in the root `CMakeLists.txt` (R22). Moved here from stage 6, since the system's PoC needs it.
+- [ ] Build under PlatformIO `espressif32` with the `espidf` and `arduino` frameworks: the SmartNode SDK has not chosen its framework yet.
+- [ ] CI build for ESP32 (Xtensa) and ESP32-C3 (RISC-V).
+- [ ] Check `BUFFER_SIZE` and the task stack against the RAM of ESP32-C3 and the Wi-Fi MTU.
 
 #### NUCLEO-F429ZI
 
@@ -192,14 +225,19 @@ The most valuable part of the removed code: a working BSP that `main` does not h
 
 #### DTLS
 
+mbedTLS comes first: it is the variant needed on ESP32, OpenWrt, STM32, and Pico (R16).
+
+- [ ] `port/net/dtls/mbedtls`: modeled on `tls-client2.cc`, but DTLS 1.2, PSK, and `TLS_PSK_WITH_AES_128_CCM_8`.
+- [ ] Server role: sessions keyed by peer address, cookies, idle-session timeout, a session limit, the key through `PskStore` (R17).
+- [ ] `peer_identity` for request handlers (R18); requests in both directions over one association (R19).
+- [ ] Interoperability with `coap-client -k` and `coap-server -k` from libcoap.
 - [ ] `port/net/dtls/wolfssl`: take the handshake from the old `unix_dtls_client.cc`, `dtls_server.cc`, `tls-client1.cc`.
-- [ ] `port/net/dtls/mbedtls`: modeled on `tls-client2.cc`; this is the variant that will be needed on STM32 and Pico.
 - [ ] Replace the embedded root certificate in `my_certificates.cc`: it appears to be DST Root CA X3, which expired in September 2021.
 - [ ] Bring `dtls-echo-server` back into `boards/posix/`.
 
 #### PlatformIO
 
-- [ ] Add `library.json` to the root of `main` with `srcFilter` on `src/` and the required `port/`.
+- [ ] Add `library.json` to the root of `main` with `srcFilter` on `src/` and the required `port/`; platforms `espressif32`, `raspberrypi`, `ststm32`.
 - [ ] Move the example from the `platformio` branch and turn it into a real CoAP server.
 - [ ] Close the `platformio` branch.
 
@@ -233,28 +271,68 @@ Where the old code goes:
 
 ### Stage 5. Full CoAP
 
-Done when: a server with one resource and a client for it fit into a 30-line example.
+Done when: a server with one resource and a client for it fit into a 30-line example, and the CoAP Smart Home scenarios from the table below pass on `loopback_transport` with a fake clock.
 
-- [ ] Message layer: CON/ACK/RST, retransmissions with backoff, deduplication, tokens.
-- [ ] A server API with resources: routing by Uri-Path, method handlers, automatic `/.well-known/core`, transparent block-wise.
-- [ ] A client API: `get`, `post`, `put`, `delete` with a callback or a future.
-- [ ] Observe (RFC 7641).
+#### Message layer and endpoint
 
-### Stage 6. Visibility
+- [ ] CON/NON/ACK/RST, retransmissions with backoff, deduplication, piggybacked and separate responses, `NSTART` (R1).
+- [ ] `Endpoint`: server and client on one transport; many transactions matched by token and address (R2, R4). The `server` and `client` from stage 3 remain thin wrappers.
+- [ ] `next_timeout_ms()` and `tick(now)`; `coap::run` is built on them (R3).
+- [ ] Limits in `config.h` and the behaviour when they are exhausted (R24).
 
-- [ ] Publish the library in the PlatformIO Registry.
-- [ ] Add an ESP-IDF component.
-- [ ] Check interoperability with libcoap, aiocoap, and Californium in CI.
-- [ ] CBOR and SenML-CBOR, DTLS with PSK on the server.
-- [ ] Optionally: OSCORE (RFC 8613), CoAP over TCP (RFC 8323).
+#### Server and client API
+
+- [ ] Routing by Uri-Path with a variable segment, method handlers, resources added at run time, Uri-Query, Location-Path, deferred response (R5).
+- [ ] Automatic `/.well-known/core` with `?rt=` filtering (R6).
+- [ ] A client API: `get`, `post`, `put`, `delete`, and an arbitrary request, with a callback and cancellation (R7).
+
+#### Observe (RFC 7641)
+
+- [ ] Server side: registration, deregistration, sequence number, a CON notification once every 24 hours (R8).
+- [ ] Client side: one subscription per resource, dropping stale notifications, re-registration, a callback on subscription loss (R9).
+
+#### Streaming block-wise
+
+- [ ] Block2 server from an `(offset, size)` callback, Size2, ETag, any block on request (R10).
+- [ ] Block2 client with a callback per block, a start from an arbitrary block, abort on an ETag change (R11).
+- [ ] Block1 on both sides with a reassembly limit (R12).
+
+#### Formats
+
+- [ ] CoRE Link: attributes without a value, ptoken values, several values in one attribute (R13). Add seeds for these cases to `fuzz/corpus/core_link/` and regression tests.
+- [ ] SenML-JSON: check every field from R14 against RFC 8428 with tests.
+
+#### CoAP Smart Home scenarios
+
+| Scenario | What is checked |
+|---|---|
+| Registration | `POST /rd?ep=…&lt=…` with a link-format payload longer than one block → `2.01 Created` with Location-Path; refresh `POST /rd/{id}` |
+| Observe | subscription, notifications, an older notification after a newer one is dropped, re-registration after loss |
+| Control | `PUT /actuators/relay` with a separate response |
+| OTA | a Block2 download of 1 MB with 10% datagram loss; the download resumes from the needed block; an ETag change aborts it |
+
+### Stage 6. Visibility and packaging
+
+- [ ] Publish the library in the PlatformIO Registry and the ESP-IDF Component Registry.
+- [ ] OpenWrt package for system 0.7: `packaging/openwrt/Makefile`, then a submission to `openwrt/packages`. Account for the APK/OPKG difference between OpenWrt versions (R22).
+- [ ] CI build with the OpenWrt SDK against musl for one MIPS and one ARM target (R21).
+- [ ] Measure the size of the stripped library and the RSS of the example in CI and compare them with the budget (R23).
+- [ ] Check interoperability with libcoap, aiocoap, and Californium in CI, over plain UDP and DTLS-PSK (R25).
+- [ ] CBOR and SenML-CBOR (R14).
+- [ ] Multicast for fallback discovery (R26).
+- [ ] OSCORE (RFC 8613) and EDHOC (RFC 9528): CoAP Smart Home needs them after its 1.0 (R20). CoAP over TCP (RFC 8323) stays optional.
 
 ### Strategic option: an LwM2M client
 
-SenML, CoRE Link, and firmware delivery over block-wise already exist. A lightweight C++ LwM2M client for microcontrollers would give the project practical value, but it is a large amount of work and should be taken on only after stage 5.
+SenML, CoRE Link, and firmware delivery over block-wise already exist. A lightweight C++ LwM2M client for microcontrollers would give the project practical value, but it is a large amount of work and should be taken on only after stage 5. CoAP Smart Home borrows the LwM2M object model but does not implement the protocol, so LwM2M stays an option rather than a requirement.
 
 ## Minimum for the first public release
 
 Stages 1–3 and 5, plus a 30-line example in the README: a server with one resource and a client for it.
+
+## Minimum for the CoAP Smart Home PoC
+
+Stages 1–3; from stage 4, the `esp32-devkitc` board; from stage 5, the message layer, `Endpoint`, the server and client API, Observe on both sides, and SenML-JSON. DTLS and streaming block-wise are not needed yet.
 
 ## Versions
 
@@ -266,6 +344,10 @@ Stages 1–3 and 5, plus a 30-line example in the README: a server with one reso
 
 1. **The next tag number.** The plan assumes `v1.0.6` on `main`. If that number is already taken by a release on the `platformio` branch, the bugfix release gets the next free one.
 2. **C++ standard.** The port interfaces are compatible with C++11, but the build wishlist includes moving to C++17 for `string_view` and `optional`. It has to be decided whether C++11 remains the minimum for the core.
-3. **Dynamic memory.** The niche implies a core without a heap, but today it uses `std::string`, `std::vector`, and `new[]`, and no stage changes that. Either a separate stage or an honest wording of the niche is needed.
-4. **Order of stages 4 and 5.** Boards give a visible result; the message layer gives real CoAP. The stages can run in parallel or be swapped.
+3. **Dynamic memory.** The niche implies a core without a heap, but today it uses `std::string`, `std::vector`, and `new[]`, and no stage changes that. Either a separate stage or an honest wording of the niche is needed. For CoAP Smart Home (Linux, OpenWrt, ESP32, Pico W) the heap is acceptable, so the question can wait until STM32.
+4. **Order of stages 4 and 5.** Boards give a visible result; the message layer gives real CoAP. For CoAP Smart Home the order is set: the ESP32 board runs in parallel with stage 5, and the other boards come after it.
 5. **RMII-on-PIO driver.** The suitability of third-party drivers for RP2350 has not been checked; on RP2040 there may not be enough clock headroom for 100 Mbit/s.
+6. **RD client in the library.** Registration with a refresh every `lt` seconds (RFC 9176) is a generic mechanism. It can be an optional library module or part of the SmartNode SDK. The library already takes no part in the RD server.
+7. **CBOR codec.** cJSON does not handle CBOR. SenML-CBOR needs either a minimal codec of our own or a third-party library (tinycbor, QCBOR).
+8. **SmartNode SDK framework.** The SDK API in the system description looks like Arduino (`setup`/`loop`), while OTA with rollback is native to ESP-IDF. Until the choice is made, the library is built under both PlatformIO frameworks.
+9. **DTLS session and gateway restarts.** With one association for both directions (R19), after a gateway restart the node must notice the session is lost and repeat the handshake. It remains to be decided whether that is the library's job (a callback on a DTLS alert or timeout) or the RD client's job.
